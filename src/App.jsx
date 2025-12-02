@@ -12,42 +12,42 @@ import "./App.css";
 const App = () => {
   const location = useLocation();
 
-  const getHeroContent = () => {
+  const getHeroTitle = () => {
     switch (location.pathname) {
       case "/":
-        return {
-          title: "Mitsubishi FUSO Truck and Bus Corporation",
-          subtitle: "Official corporate social network for FUSO employees",
-        };
+        return "Mitsubishi FUSO Truck and Bus Corporation";
       case "/news":
-        return {
-          title: "MFTBC News",
-          subtitle: "Stay informed with official updates, internal announcements,\nachievements, and cross-location highlights from FUSO.",
-        };
+        return "MFTBC News";
       case "/hr":
-        return {
-          title: "Human Resources",
-          subtitle: "Access HR policies, benefits, recruitment, and employee services",
-        };
+        return "HR";
       case "/it":
-        return {
-          title: "Information Technology",
-          subtitle: "Digital workplace tools, IT support, and technology resources",
-        };
+        return "IT";
+      case "/cross-functions":
+        return "Cross Functions";
+      case "/activity":
+        return "Activity";
+      case "/content":
+        return "Content";
+      case "/people":
+        return "People";
+      case "/spaces":
+        return "Spaces";
+      case "/calendar":
+        return "Calendar";
+      case "/ceo-message":
+        return "CEO Message";
       default:
-        return {
-          title: "Mitsubishi FUSO Truck and Bus Corporation",
-          subtitle: "Official corporate social network for FUSO employees",
-        };
+        return "Mitsubishi FUSO Truck and Bus Corporation";
     }
   };
 
-  const heroContent = getHeroContent();
+  const heroTitle = getHeroTitle();
+  const heroSubtitle = "Official corporate social network for FUSO employees";
 
   return (
     <main className="app-container">
       <Header />
-      <HeroSection title={heroContent.title} subtitle={heroContent.subtitle} />
+      <HeroSection title={heroTitle} subtitle={heroSubtitle} />
       <NavigationTabs />
       <Routes>
         <Route path="/" element={<Home />} />
