@@ -7,6 +7,7 @@ import Footer from "./components/Footer/Footer";
 import Home from "./pages/Home/Home";
 import News from "./pages/News/News";
 import HR from "./pages/HR/HR";
+import Content from "./pages/Content/Content";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
@@ -54,8 +55,8 @@ const App = () => {
       case "/content":
         return {
           title: "Content",
-          subtitle: null,
-          image: "/div-34.png"
+          subtitle: "Discover and share knowledge across the organization",
+          image: "/Content.png"
         };
       case "/people":
         return {
@@ -108,7 +109,7 @@ const App = () => {
         <Route path="/it" element={<div className="container py-5"><h2>IT Page - Coming Soon</h2></div>} />
         <Route path="/cross-functions" element={<div className="container py-5"><h2>Cross Functions Page - Coming Soon</h2></div>} />
         <Route path="/activity" element={<div className="container py-5"><h2>Activity Page - Coming Soon</h2></div>} />
-        <Route path="/content" element={<div className="container py-5"><h2>Content Page - Coming Soon</h2></div>} />
+        <Route path="/content" element={<Content />} />
         <Route path="/people" element={<div className="container py-5"><h2>People Page - Coming Soon</h2></div>} />
         <Route path="/spaces" element={<div className="container py-5"><h2>Spaces Page - Coming Soon</h2></div>} />
         <Route path="/calendar" element={<div className="container py-5"><h2>Calendar Page - Coming Soon</h2></div>} />
