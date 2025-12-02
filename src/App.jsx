@@ -6,52 +6,105 @@ import NavigationTabs from "./components/NavigationTabs/NavigationTabs";
 import Footer from "./components/Footer/Footer";
 import Home from "./pages/Home/Home";
 import News from "./pages/News/News";
+import HR from "./pages/HR/HR";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
 const App = () => {
   const location = useLocation();
 
-  const getHeroTitle = () => {
+  const getHeroConfig = () => {
     switch (location.pathname) {
       case "/":
-        return "Mitsubishi FUSO Truck and Bus Corporation";
+        return {
+          title: "Mitsubishi FUSO Truck and Bus Corporation",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/news":
-        return "MFTBC News";
+        return {
+          title: "MFTBC News",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/hr":
-        return "HR";
+        return {
+          title: "Human Resources",
+          subtitle: "Find everything related to your work, well-being, and HR support at FUSO.",
+          image: "/hr.png"
+        };
       case "/it":
-        return "IT";
+        return {
+          title: "IT",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/cross-functions":
-        return "Cross Functions";
+        return {
+          title: "Cross Functions",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/activity":
-        return "Activity";
+        return {
+          title: "Activity",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/content":
-        return "Content";
+        return {
+          title: "Content",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/people":
-        return "People";
+        return {
+          title: "People",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/spaces":
-        return "Spaces";
+        return {
+          title: "Spaces",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/calendar":
-        return "Calendar";
+        return {
+          title: "Calendar",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       case "/ceo-message":
-        return "CEO Message";
+        return {
+          title: "CEO Message",
+          subtitle: null,
+          image: "/div-34.png"
+        };
       default:
-        return "Mitsubishi FUSO Truck and Bus Corporation";
+        return {
+          title: "Mitsubishi FUSO Truck and Bus Corporation",
+          subtitle: null,
+          image: "/div-34.png"
+        };
     }
   };
 
-  const heroTitle = getHeroTitle();
+  const heroConfig = getHeroConfig();
 
   return (
     <main className="app-container">
       <Header />
-      <HeroSection title={heroTitle} />
+      <HeroSection
+        title={heroConfig.title}
+        subtitle={heroConfig.subtitle}
+        image={heroConfig.image}
+      />
       <NavigationTabs />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/news" element={<News />} />
-        <Route path="/hr" element={<div className="container py-5"><h2>HR Page - Coming Soon</h2></div>} />
+        <Route path="/hr" element={<HR />} />
         <Route path="/it" element={<div className="container py-5"><h2>IT Page - Coming Soon</h2></div>} />
         <Route path="/cross-functions" element={<div className="container py-5"><h2>Cross Functions Page - Coming Soon</h2></div>} />
         <Route path="/activity" element={<div className="container py-5"><h2>Activity Page - Coming Soon</h2></div>} />
