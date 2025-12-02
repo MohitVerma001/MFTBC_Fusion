@@ -1,7 +1,7 @@
 import React from "react";
 import "./HeroSection.css";
 
-const HeroSection = ({ title, subtitle }) => {
+const HeroSection = ({ title }) => {
   return (
     <section className="hero-section">
       <div className="hero-overlay"></div>
@@ -10,7 +10,6 @@ const HeroSection = ({ title, subtitle }) => {
         <div className="row">
           <div className="col-12">
             <h1 className="hero-title">{title}</h1>
-            <p className="hero-subtitle">{subtitle}</p>
           </div>
         </div>
       </div>

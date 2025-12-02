@@ -42,12 +42,11 @@ const App = () => {
   };
 
   const heroTitle = getHeroTitle();
-  const heroSubtitle = "Official corporate social network for FUSO employees";
 
   return (
     <main className="app-container">
       <Header />
-      <HeroSection title={heroTitle} subtitle={heroSubtitle} />
+      <HeroSection title={heroTitle} />
       <NavigationTabs />
       <Routes>
         <Route path="/" element={<Home />} />
