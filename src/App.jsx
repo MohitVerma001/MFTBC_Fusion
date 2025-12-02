@@ -8,11 +8,14 @@ import Home from "./pages/Home/Home";
 import News from "./pages/News/News";
 import HR from "./pages/HR/HR";
 import Content from "./pages/Content/Content";
+import CreateBlog from "./pages/CreateBlog/CreateBlog";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
 const App = () => {
   const location = useLocation();
+
+  const isCreatePage = location.pathname.startsWith("/create");
 
   const getHeroConfig = () => {
     switch (location.pathname) {
@@ -95,13 +98,17 @@ const App = () => {
 
   return (
     <main className="app-container">
-      <Header />
-      <HeroSection
-        title={heroConfig.title}
-        subtitle={heroConfig.subtitle}
-        image={heroConfig.image}
-      />
-      <NavigationTabs />
+      {!isCreatePage && (
+        <>
+          <Header />
+          <HeroSection
+            title={heroConfig.title}
+            subtitle={heroConfig.subtitle}
+            image={heroConfig.image}
+          />
+          <NavigationTabs />
+        </>
+      )}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/news" element={<News />} />
@@ -114,9 +121,10 @@ const App = () => {
         <Route path="/spaces" element={<div className="container py-5"><h2>Spaces Page - Coming Soon</h2></div>} />
         <Route path="/calendar" element={<div className="container py-5"><h2>Calendar Page - Coming Soon</h2></div>} />
         <Route path="/ceo-message" element={<div className="container py-5"><h2>CEO Message Page - Coming Soon</h2></div>} />
+        <Route path="/create/blog" element={<CreateBlog />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Footer />
+      {!isCreatePage && <Footer />}
     </main>
   );
 };

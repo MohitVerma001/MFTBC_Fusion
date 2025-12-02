@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "./CreatePanel.css";
 
 const CreatePanel = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -85,6 +87,10 @@ const CreatePanel = ({ isOpen, onClose }) => {
   const handleItemClick = (item) => {
     console.log(`Clicked: ${item.label}`);
     onClose();
+
+    if (item.id === "blogs") {
+      navigate("/create/blog");
+    }
   };
 
   if (!isOpen) return null;
