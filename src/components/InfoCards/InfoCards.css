@@ -1,0 +1,156 @@
+/* Info Cards Section */
+.info-cards-section {
+  padding: 2rem 0;
+}
+
+.info-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.info-card-title {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 28px;
+  color: #111726;
+  margin-bottom: 1rem;
+}
+
+.info-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* HR Quick Links & IT Digitalization */
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.link-item:hover {
+  background: #f9fafb;
+}
+
+.link-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.link-label {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  color: #374050;
+}
+
+.link-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.link-title {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #111726;
+}
+
+.link-description {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6b7280;
+}
+
+/* People Connect */
+.person-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 0;
+}
+
+.person-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 1) 0%, rgba(220, 38, 38, 1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.person-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.person-name {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #111726;
+}
+
+.person-role {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6b7280;
+}
+
+.person-followers {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #9ca3af;
+}
+
+.follow-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #db2525;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.follow-btn:hover {
+  background: #c21f1f;
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+  .info-card {
+    margin-bottom: 1rem;
+  }
+}
