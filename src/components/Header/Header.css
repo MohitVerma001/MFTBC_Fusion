@@ -16,6 +16,16 @@
   width: 40px;
   height: 40px;
   cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.header-icon-clickable:hover {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
+.header-icon-clickable:active {
+  transform: scale(0.95);
 }
 
 /* Language Toggle */
