@@ -1,21 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
+import { NavLink } from "react-router-dom";
 import "./NavigationTabs.css";
 
 const NavigationTabs = () => {
-  const [activeTab, setActiveTab] = useState(null);
-
   const navigationItems = [
-    { label: "News" },
-    { label: "HR" },
-    { label: "IT" },
-    { label: "Cross Functions" },
-    { label: "Activity" },
-    { label: "Content" },
-    { label: "People" },
-    { label: "Spaces" },
-    { label: "Calendar" },
-    { label: "CEO Message" },
-    { label: "More", hasDropdown: true },
+    { label: "News", path: "/news" },
+    { label: "HR", path: "/hr" },
+    { label: "IT", path: "/it" },
+    { label: "Cross Functions", path: "/cross-functions" },
+    { label: "Activity", path: "/activity" },
+    { label: "Content", path: "/content" },
+    { label: "People", path: "/people" },
+    { label: "Spaces", path: "/spaces" },
+    { label: "Calendar", path: "/calendar" },
+    { label: "CEO Message", path: "/ceo-message" },
+    { label: "More", path: "#", hasDropdown: true },
   ];
 
   return (
@@ -24,14 +23,10 @@ const NavigationTabs = () => {
         <div className="row">
           <div className="col-12">
             <div className="nav-items-container">
-              {navigationItems.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveTab(item.label)}
-                  className={`nav-tab-item ${activeTab === item.label ? "active" : ""}`}
-                >
-                  <span>{item.label}</span>
-                  {item.hasDropdown && (
+              {navigationItems.map((item, index) =>
+                item.hasDropdown ? (
+                  <button key={index} className="nav-tab-item">
+                    <span>{item.label}</span>
                     <svg
                       width="10"
                       height="6"
@@ -48,9 +43,19 @@ const NavigationTabs = () => {
                         strokeLinejoin="round"
                       />
                     </svg>
-                  )}
-                </button>
-              ))}
+                  </button>
+                ) : (
+                  <NavLink
+                    key={index}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `nav-tab-item ${isActive ? "active" : ""}`
+                    }
+                  >
+                    <span>{item.label}</span>
+                  </NavLink>
+                )
+              )}
             </div>
           </div>
         </div>

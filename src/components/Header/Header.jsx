@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./Header.css";
 
 const Header = () => {
@@ -12,7 +13,9 @@ const Header = () => {
       <div className="container-fluid">
         <div className="row align-items-center">
           <div className="col-auto">
-            <img className="header-logo" alt="Logo" src="/div-6.svg" />
+            <Link to="/">
+              <img className="header-logo" alt="Logo" src="/div-6.svg" />
+            </Link>
           </div>
 
           <div className="col d-flex justify-content-end align-items-center">
