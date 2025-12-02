@@ -88,8 +88,18 @@ const CreatePanel = ({ isOpen, onClose }) => {
     console.log(`Clicked: ${item.label}`);
     onClose();
 
-    if (item.id === "blogs") {
-      navigate("/create/blog");
+    const routeMap = {
+      blogs: "/create/blog",
+      documents: "/create/document",
+      subspace: "/create/subspace",
+      events: "/create/event",
+      discussion: "/create/discussion",
+      polls: "/create/poll",
+      videos: "/create/video",
+    };
+
+    if (routeMap[item.id]) {
+      navigate(routeMap[item.id]);
     }
   };
 

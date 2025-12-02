@@ -9,6 +9,12 @@ import News from "./pages/News/News";
 import HR from "./pages/HR/HR";
 import Content from "./pages/Content/Content";
 import CreateBlog from "./pages/CreateBlog/CreateBlog";
+import CreateDocument from "./pages/CreateDocument/CreateDocument";
+import CreateEvent from "./pages/CreateEvent/CreateEvent";
+import CreatePoll from "./pages/CreatePoll/CreatePoll";
+import CreateDiscussion from "./pages/CreateDiscussion/CreateDiscussion";
+import CreateSubSpace from "./pages/CreateSubSpace/CreateSubSpace";
+import CreateVideo from "./pages/CreateVideo/CreateVideo";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
@@ -122,6 +128,12 @@ const App = () => {
         <Route path="/calendar" element={<div className="container py-5"><h2>Calendar Page - Coming Soon</h2></div>} />
         <Route path="/ceo-message" element={<div className="container py-5"><h2>CEO Message Page - Coming Soon</h2></div>} />
         <Route path="/create/blog" element={<CreateBlog />} />
+        <Route path="/create/document" element={<CreateDocument />} />
+        <Route path="/create/event" element={<CreateEvent />} />
+        <Route path="/create/poll" element={<CreatePoll />} />
+        <Route path="/create/discussion" element={<CreateDiscussion />} />
+        <Route path="/create/subspace" element={<CreateSubSpace />} />
+        <Route path="/create/video" element={<CreateVideo />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!isCreatePage && <Footer />}

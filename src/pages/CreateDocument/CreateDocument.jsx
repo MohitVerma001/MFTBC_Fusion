@@ -7,10 +7,9 @@ import TextField from "../../components/FormComponents/TextField";
 import TextArea from "../../components/FormComponents/TextArea";
 import SelectField from "../../components/FormComponents/SelectField";
 import TagInput from "../../components/FormComponents/TagInput";
-import ImageUpload from "../../components/FormComponents/ImageUpload";
 import FileUpload from "../../components/FormComponents/FileUpload";
 
-const CreateBlog = () => {
+const CreateDocument = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -18,7 +17,6 @@ const CreateBlog = () => {
     subject: "",
     contentText: "",
     tags: [],
-    contentImages: [],
     attachments: [],
   });
 
@@ -43,86 +41,56 @@ const CreateBlog = () => {
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.publishTo) {
-      newErrors.publishTo = "Please select where to publish";
-    }
-    if (!formData.subject.trim()) {
-      newErrors.subject = "Subject is required";
-    }
-    if (!formData.contentText.trim()) {
-      newErrors.contentText = "Content is required";
-    }
+    if (!formData.publishTo) newErrors.publishTo = "Please select where to publish";
+    if (!formData.subject.trim()) newErrors.subject = "Subject is required";
+    if (!formData.contentText.trim()) newErrors.contentText = "Content is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const createBlogPost = async (data) => {
-    const blogPost = {
+  const createDocument = async (data) => {
+    const document = {
       publishTo: data.publishTo,
       subject: data.subject,
-      content: {
-        text: data.contentText,
-      },
+      content: { text: data.contentText },
       tags: data.tags,
-      contentImages: data.contentImages.map((img) => ({
-        url: img.url,
-        name: img.name,
-      })),
       attachments: data.attachments.map((att) => ({
         name: att.name,
         size: att.size,
       })),
       published: new Date().toISOString(),
-      author: {
-        id: "current-user-id",
-        name: "John Doe",
-        avatar: "JD",
-      },
+      author: { id: "current-user-id", name: "John Doe", avatar: "JD" },
       parentPlace: data.publishTo,
-      type: "post",
     };
 
-    console.log("Creating blog post:", blogPost);
-    return blogPost;
+    console.log("Creating document:", document);
+    return document;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      await createBlogPost(formData);
-      alert("Blog Post Published Successfully!");
-
-      if (formData.publishTo === "news") {
-        navigate("/news");
-      } else {
-        navigate("/");
-      }
+      await createDocument(formData);
+      alert("Document Published Successfully!");
+      navigate(formData.publishTo === "news" ? "/news" : "/");
     } catch (error) {
-      console.error("Error creating blog post:", error);
-      alert("Failed to publish blog post. Please try again.");
+      console.error("Error creating document:", error);
+      alert("Failed to publish document. Please try again.");
     }
-  };
-
-  const handleCancel = () => {
-    navigate(-1);
   };
 
   return (
     <>
       <Header />
       <FormWrapper
-        title="Create Blog Post"
-        subtitle="Share your insights and updates with the organization"
+        title="Create Document"
+        subtitle="Share policies, procedures, and important documents"
         onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        submitLabel="Publish Blog"
+        onCancel={() => navigate(-1)}
+        submitLabel="Publish Document"
       >
         <FormSection title="Publish Type" icon="📍">
           <SelectField
@@ -137,45 +105,36 @@ const CreateBlog = () => {
           />
         </FormSection>
 
-        <FormSection title="Basic Information" icon="📝">
+        <FormSection title="Document Information" icon="📄">
           <TextField
-            label="Subject"
+            label="Document Title"
             name="subject"
             value={formData.subject}
             onChange={handleInputChange}
-            placeholder="Enter blog post subject"
+            placeholder="Enter document title"
             required
             error={errors.subject}
           />
           <TextArea
-            label="Content"
+            label="Description"
             name="contentText"
             value={formData.contentText}
             onChange={handleInputChange}
-            placeholder="Write your blog content here..."
-            rows={10}
+            placeholder="Describe the document..."
+            rows={8}
             required
             error={errors.contentText}
           />
         </FormSection>
 
-        <FormSection title="Images" icon="🖼️">
-          <ImageUpload
-            label="Content Images"
-            images={formData.contentImages}
-            onImagesChange={(images) =>
-              setFormData((prev) => ({ ...prev, contentImages: images }))
-            }
-          />
-        </FormSection>
-
-        <FormSection title="Attachments" icon="📎">
+        <FormSection title="File Attachments" icon="📎">
           <FileUpload
-            label="File Attachments"
+            label="Upload Documents (PDF, DOC, etc.)"
             files={formData.attachments}
             onFilesChange={(files) =>
               setFormData((prev) => ({ ...prev, attachments: files }))
             }
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
           />
         </FormSection>
 
@@ -193,4 +152,4 @@ const CreateBlog = () => {
   );
 };
 
-export default CreateBlog;
+export default CreateDocument;

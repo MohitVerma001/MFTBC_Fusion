@@ -6,20 +6,18 @@ import FormSection from "../../components/FormComponents/FormSection";
 import TextField from "../../components/FormComponents/TextField";
 import TextArea from "../../components/FormComponents/TextArea";
 import SelectField from "../../components/FormComponents/SelectField";
+import DynamicList from "../../components/FormComponents/DynamicList";
 import TagInput from "../../components/FormComponents/TagInput";
-import ImageUpload from "../../components/FormComponents/ImageUpload";
-import FileUpload from "../../components/FormComponents/FileUpload";
 
-const CreateBlog = () => {
+const CreatePoll = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     publishTo: "",
     subject: "",
     contentText: "",
+    options: [],
     tags: [],
-    contentImages: [],
-    attachments: [],
   });
 
   const [errors, setErrors] = useState({});
@@ -43,86 +41,54 @@ const CreateBlog = () => {
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.publishTo) {
-      newErrors.publishTo = "Please select where to publish";
-    }
-    if (!formData.subject.trim()) {
-      newErrors.subject = "Subject is required";
-    }
-    if (!formData.contentText.trim()) {
-      newErrors.contentText = "Content is required";
-    }
+    if (!formData.publishTo) newErrors.publishTo = "Please select where to publish";
+    if (!formData.subject.trim()) newErrors.subject = "Question is required";
+    if (formData.options.length < 2) newErrors.options = "At least 2 options are required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const createBlogPost = async (data) => {
-    const blogPost = {
+  const createPoll = async (data) => {
+    const poll = {
       publishTo: data.publishTo,
       subject: data.subject,
-      content: {
-        text: data.contentText,
-      },
+      content: { text: data.contentText },
+      options: data.options,
       tags: data.tags,
-      contentImages: data.contentImages.map((img) => ({
-        url: img.url,
-        name: img.name,
-      })),
-      attachments: data.attachments.map((att) => ({
-        name: att.name,
-        size: att.size,
-      })),
       published: new Date().toISOString(),
-      author: {
-        id: "current-user-id",
-        name: "John Doe",
-        avatar: "JD",
-      },
+      author: { id: "current-user-id", name: "John Doe", avatar: "JD" },
       parentPlace: data.publishTo,
-      type: "post",
+      type: "poll",
     };
 
-    console.log("Creating blog post:", blogPost);
-    return blogPost;
+    console.log("Creating poll:", poll);
+    return poll;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      await createBlogPost(formData);
-      alert("Blog Post Published Successfully!");
-
-      if (formData.publishTo === "news") {
-        navigate("/news");
-      } else {
-        navigate("/");
-      }
+      await createPoll(formData);
+      alert("Poll Published Successfully!");
+      navigate(formData.publishTo === "news" ? "/news" : "/");
     } catch (error) {
-      console.error("Error creating blog post:", error);
-      alert("Failed to publish blog post. Please try again.");
+      console.error("Error creating poll:", error);
+      alert("Failed to publish poll. Please try again.");
     }
-  };
-
-  const handleCancel = () => {
-    navigate(-1);
   };
 
   return (
     <>
       <Header />
       <FormWrapper
-        title="Create Blog Post"
-        subtitle="Share your insights and updates with the organization"
+        title="Create Poll"
+        subtitle="Gather feedback and opinions from your team"
         onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        submitLabel="Publish Blog"
+        onCancel={() => navigate(-1)}
+        submitLabel="Publish Poll"
       >
         <FormSection title="Publish Type" icon="📍">
           <SelectField
@@ -137,46 +103,39 @@ const CreateBlog = () => {
           />
         </FormSection>
 
-        <FormSection title="Basic Information" icon="📝">
+        <FormSection title="Poll Question" icon="📊">
           <TextField
-            label="Subject"
+            label="Question"
             name="subject"
             value={formData.subject}
             onChange={handleInputChange}
-            placeholder="Enter blog post subject"
+            placeholder="What would you like to ask?"
             required
             error={errors.subject}
+            icon="❓"
           />
           <TextArea
-            label="Content"
+            label="Additional Context (Optional)"
             name="contentText"
             value={formData.contentText}
             onChange={handleInputChange}
-            placeholder="Write your blog content here..."
-            rows={10}
-            required
-            error={errors.contentText}
+            placeholder="Provide more details about this poll..."
+            rows={4}
           />
         </FormSection>
 
-        <FormSection title="Images" icon="🖼️">
-          <ImageUpload
-            label="Content Images"
-            images={formData.contentImages}
-            onImagesChange={(images) =>
-              setFormData((prev) => ({ ...prev, contentImages: images }))
+        <FormSection title="Poll Options" icon="✅">
+          <DynamicList
+            label="Answer Options"
+            items={formData.options}
+            onItemsChange={(options) =>
+              setFormData((prev) => ({ ...prev, options }))
             }
+            placeholder="Enter an option"
           />
-        </FormSection>
-
-        <FormSection title="Attachments" icon="📎">
-          <FileUpload
-            label="File Attachments"
-            files={formData.attachments}
-            onFilesChange={(files) =>
-              setFormData((prev) => ({ ...prev, attachments: files }))
-            }
-          />
+          {errors.options && (
+            <div className="text-danger small mt-2">{errors.options}</div>
+          )}
         </FormSection>
 
         <FormSection title="Metadata" icon="🏷️">
@@ -193,4 +152,4 @@ const CreateBlog = () => {
   );
 };
 
-export default CreateBlog;
+export default CreatePoll;
