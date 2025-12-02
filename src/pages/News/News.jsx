@@ -113,22 +113,6 @@ const News = () => {
 
   return (
     <div className="news-page">
-      {/* Hero Section */}
-      <section className="news-hero">
-        <div className="container">
-          <div className="row">
-            <div className="col-12">
-              <h1 className="news-hero-title">MFTBC News</h1>
-              <p className="news-hero-subtitle">
-                Stay informed with official updates, internal announcements,
-                <br />
-                achievements, and cross-location highlights from FUSO.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Filters Section */}
       <section className="news-filters">
         <div className="container">

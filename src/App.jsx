@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Header from "./components/Header/Header";
+import HeroSection from "./components/HeroSection/HeroSection";
 import NavigationTabs from "./components/NavigationTabs/NavigationTabs";
 import Footer from "./components/Footer/Footer";
 import Home from "./pages/Home/Home";
@@ -10,12 +11,44 @@ import "./App.css";
 
 const App = () => {
   const location = useLocation();
-  const showNavigationTabs = location.pathname !== "/";
+
+  const getHeroContent = () => {
+    switch (location.pathname) {
+      case "/":
+        return {
+          title: "Mitsubishi FUSO Truck and Bus Corporation",
+          subtitle: "Official corporate social network for FUSO employees",
+        };
+      case "/news":
+        return {
+          title: "MFTBC News",
+          subtitle: "Stay informed with official updates, internal announcements,\nachievements, and cross-location highlights from FUSO.",
+        };
+      case "/hr":
+        return {
+          title: "Human Resources",
+          subtitle: "Access HR policies, benefits, recruitment, and employee services",
+        };
+      case "/it":
+        return {
+          title: "Information Technology",
+          subtitle: "Digital workplace tools, IT support, and technology resources",
+        };
+      default:
+        return {
+          title: "Mitsubishi FUSO Truck and Bus Corporation",
+          subtitle: "Official corporate social network for FUSO employees",
+        };
+    }
+  };
+
+  const heroContent = getHeroContent();
 
   return (
     <main className="app-container">
       <Header />
-      {showNavigationTabs && <NavigationTabs />}
+      <HeroSection title={heroContent.title} subtitle={heroContent.subtitle} />
+      <NavigationTabs />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/news" element={<News />} />
