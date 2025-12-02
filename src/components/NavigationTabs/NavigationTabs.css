@@ -22,7 +22,7 @@
   padding: 1rem 1.5rem;
   border: none;
   background: transparent;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
   font-size: 14px;
@@ -30,15 +30,20 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  text-decoration: none;
+  margin-bottom: -1px;
 }
 
 .nav-tab-item:hover {
-  border-bottom-color: #d1d5db;
+  border-bottom-color: #dc2626;
+  color: #111726;
+  text-decoration: none;
 }
 
 .nav-tab-item.active {
-  border-bottom-color: #db2525;
+  border-bottom-color: #dc2626;
   color: #111726;
+  text-decoration: none;
 }
 
 .dropdown-icon {
