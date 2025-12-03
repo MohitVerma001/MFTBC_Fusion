@@ -1,63 +1,68 @@
-import { supabase } from '../../database.js';
+import pool from '../../database.js';
 
 export const PlaceModel = {
   async create(placeData) {
-    const { data, error } = await supabase
-      .from('places')
-      .insert([placeData])
-      .select()
-      .single();
+    const { name, description, type } = placeData;
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(
+      `INSERT INTO places (name, description, type, created_at)
+       VALUES ($1, $2, $3, NOW())
+       RETURNING *`,
+      [name, description, type]
+    );
+
+    return result.rows[0];
   },
 
   async findAll(filters = {}) {
-    let query = supabase
-      .from('places')
-      .select('*')
-      .order('name', { ascending: true });
+    let query = 'SELECT * FROM places WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
 
     if (filters.type) {
-      query = query.eq('type', filters.type);
+      query += ` AND type = $${paramIndex}`;
+      params.push(filters.type);
+      paramIndex++;
     }
 
-    const { data, error } = await query;
+    query += ' ORDER BY name ASC';
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(query, params);
+    return result.rows;
   },
 
   async findById(id) {
-    const { data, error } = await supabase
-      .from('places')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const result = await pool.query(
+      'SELECT * FROM places WHERE id = $1',
+      [id]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows[0];
   },
 
   async update(id, placeData) {
-    const { data, error } = await supabase
-      .from('places')
-      .update(placeData)
-      .eq('id', id)
-      .select()
-      .single();
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
 
-    if (error) throw error;
-    return data;
+    Object.keys(placeData).forEach(key => {
+      fields.push(`${key} = $${paramIndex}`);
+      values.push(placeData[key]);
+      paramIndex++;
+    });
+
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE places SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    return result.rows[0];
   },
 
   async delete(id) {
-    const { error } = await supabase
-      .from('places')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await pool.query('DELETE FROM places WHERE id = $1', [id]);
     return { success: true };
   }
 };

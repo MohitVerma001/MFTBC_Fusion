@@ -1,164 +1,214 @@
-import { supabase } from '../../database.js';
+import pool from '../../database.js';
 
 export const BlogModel = {
   async create(blogData) {
-    const { data, error } = await supabase
-      .from('blogs')
-      .insert([blogData])
-      .select()
-      .single();
+    const {
+      title,
+      content,
+      content_html,
+      publish_to,
+      category_id,
+      space_id,
+      place_id,
+      restricted_comments,
+      is_place_blog,
+      author_id,
+      status,
+      published_at
+    } = blogData;
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(
+      `INSERT INTO blogs (
+        title, content, content_html, publish_to, category_id, space_id, place_id,
+        restricted_comments, is_place_blog, author_id, status, published_at,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      RETURNING *`,
+      [
+        title,
+        content,
+        content_html,
+        publish_to,
+        category_id,
+        space_id,
+        place_id,
+        restricted_comments || false,
+        is_place_blog || false,
+        author_id,
+        status || 'published',
+        published_at || new Date()
+      ]
+    );
+
+    return result.rows[0];
   },
 
   async findAll(filters = {}) {
-    let query = supabase
-      .from('blogs')
-      .select(`
-        *,
-        category:categories(id, name, description),
-        place:places(id, name),
-        subspace:subspaces(id, name)
-      `)
-      .order('created_at', { ascending: false });
+    let query = `
+      SELECT
+        b.*,
+        json_build_object('id', c.id, 'name', c.name, 'description', c.description) as category,
+        json_build_object('id', p.id, 'name', p.name) as place,
+        json_build_object('id', s.id, 'name', s.name) as subspace
+      FROM blogs b
+      LEFT JOIN categories c ON b.category_id = c.id
+      LEFT JOIN places p ON b.place_id = p.id
+      LEFT JOIN subspaces s ON b.space_id = s.id
+      WHERE 1=1
+    `;
+
+    const params = [];
+    let paramIndex = 1;
 
     if (filters.publish_to) {
-      query = query.eq('publish_to', filters.publish_to);
+      query += ` AND b.publish_to = $${paramIndex}`;
+      params.push(filters.publish_to);
+      paramIndex++;
     }
 
     if (filters.category_id) {
-      query = query.eq('category_id', filters.category_id);
+      query += ` AND b.category_id = $${paramIndex}`;
+      params.push(filters.category_id);
+      paramIndex++;
     }
 
     if (filters.space_id) {
-      query = query.eq('space_id', filters.space_id);
+      query += ` AND b.space_id = $${paramIndex}`;
+      params.push(filters.space_id);
+      paramIndex++;
     }
 
     if (filters.is_published !== undefined) {
-      query = query.eq('status', filters.is_published ? 'published' : 'draft');
+      query += ` AND b.status = $${paramIndex}`;
+      params.push(filters.is_published ? 'published' : 'draft');
+      paramIndex++;
     }
 
-    const { data, error } = await query;
+    query += ` ORDER BY b.created_at DESC`;
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(query, params);
+    return result.rows;
   },
 
   async findById(id) {
-    const { data, error } = await supabase
-      .from('blogs')
-      .select(`
-        *,
-        category:categories(id, name, description, image_url),
-        place:places(id, name, description),
-        subspace:subspaces(id, name, description)
-      `)
-      .eq('id', id)
-      .single();
+    const result = await pool.query(
+      `SELECT
+        b.*,
+        json_build_object('id', c.id, 'name', c.name, 'description', c.description, 'image_url', c.image_url) as category,
+        json_build_object('id', p.id, 'name', p.name, 'description', p.description) as place,
+        json_build_object('id', s.id, 'name', s.name, 'description', s.description) as subspace
+      FROM blogs b
+      LEFT JOIN categories c ON b.category_id = c.id
+      LEFT JOIN places p ON b.place_id = p.id
+      LEFT JOIN subspaces s ON b.space_id = s.id
+      WHERE b.id = $1`,
+      [id]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows[0];
   },
 
   async update(id, blogData) {
-    const { data, error } = await supabase
-      .from('blogs')
-      .update({ ...blogData, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
 
-    if (error) throw error;
-    return data;
+    Object.keys(blogData).forEach(key => {
+      fields.push(`${key} = $${paramIndex}`);
+      values.push(blogData[key]);
+      paramIndex++;
+    });
+
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE blogs SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    return result.rows[0];
   },
 
   async delete(id) {
-    const { error } = await supabase
-      .from('blogs')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await pool.query('DELETE FROM blogs WHERE id = $1', [id]);
     return { success: true };
   },
 
   async addTags(blogId, tagIds) {
-    const blogTags = tagIds.map(tagId => ({
-      blog_id: blogId,
-      tag_id: tagId
-    }));
+    const values = tagIds.map((tagId, index) =>
+      `($1, $${index + 2})`
+    ).join(', ');
 
-    const { data, error } = await supabase
-      .from('blog_tags')
-      .insert(blogTags)
-      .select();
+    const result = await pool.query(
+      `INSERT INTO blog_tags (blog_id, tag_id) VALUES ${values} RETURNING *`,
+      [blogId, ...tagIds]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows;
   },
 
   async getTags(blogId) {
-    const { data, error } = await supabase
-      .from('blog_tags')
-      .select('tag:tags(id, name, slug)')
-      .eq('blog_id', blogId);
+    const result = await pool.query(
+      `SELECT t.id, t.name, t.slug
+       FROM tags t
+       INNER JOIN blog_tags bt ON t.id = bt.tag_id
+       WHERE bt.blog_id = $1`,
+      [blogId]
+    );
 
-    if (error) throw error;
-    return data.map(item => item.tag);
+    return result.rows;
   },
 
   async addImages(blogId, imageUrls) {
-    const images = imageUrls.map(url => ({
-      blog_id: blogId,
-      image_url: url
-    }));
+    const values = imageUrls.map((url, index) =>
+      `($1, $${index + 2}, NOW())`
+    ).join(', ');
 
-    const { data, error } = await supabase
-      .from('blog_images')
-      .insert(images)
-      .select();
+    const result = await pool.query(
+      `INSERT INTO blog_images (blog_id, image_url, created_at) VALUES ${values} RETURNING *`,
+      [blogId, ...imageUrls]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows;
   },
 
   async getImages(blogId) {
-    const { data, error } = await supabase
-      .from('blog_images')
-      .select('*')
-      .eq('blog_id', blogId);
+    const result = await pool.query(
+      'SELECT * FROM blog_images WHERE blog_id = $1',
+      [blogId]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows;
   },
 
   async addAttachments(blogId, attachments) {
-    const attachmentRecords = attachments.map(att => ({
-      blog_id: blogId,
-      file_url: att.url,
-      file_name: att.filename,
-      file_size: att.size,
-      mime_type: att.mimeType
-    }));
+    const values = attachments.map((_, index) => {
+      const base = index * 4;
+      return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, NOW())`;
+    }).join(', ');
 
-    const { data, error } = await supabase
-      .from('blog_attachments')
-      .insert(attachmentRecords)
-      .select();
+    const params = [blogId];
+    attachments.forEach(att => {
+      params.push(att.url, att.filename, att.size, att.mimeType);
+    });
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(
+      `INSERT INTO blog_attachments (blog_id, file_url, file_name, file_size, mime_type, created_at)
+       VALUES ${values} RETURNING *`,
+      params
+    );
+
+    return result.rows;
   },
 
   async getAttachments(blogId) {
-    const { data, error } = await supabase
-      .from('blog_attachments')
-      .select('*')
-      .eq('blog_id', blogId);
+    const result = await pool.query(
+      'SELECT * FROM blog_attachments WHERE blog_id = $1',
+      [blogId]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows;
   }
 };
 

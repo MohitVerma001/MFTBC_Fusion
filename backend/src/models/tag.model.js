@@ -1,81 +1,73 @@
-import { supabase } from '../../database.js';
+import pool from '../../database.js';
 
 export const TagModel = {
   async create(tagData) {
-    const slug = tagData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+    const { name } = tagData;
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
-    const { data, error } = await supabase
-      .from('tags')
-      .insert([{ ...tagData, slug }])
-      .select()
-      .single();
+    const result = await pool.query(
+      `INSERT INTO tags (name, slug, created_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (name) DO NOTHING
+       RETURNING *`,
+      [name, slug]
+    );
 
-    if (error) {
-      if (error.code === '23505') {
-        return await this.findByName(tagData.name);
-      }
-      throw error;
+    if (result.rows.length === 0) {
+      return await this.findByName(name);
     }
-    return data;
+
+    return result.rows[0];
   },
 
   async findAll(filters = {}) {
-    let query = supabase
-      .from('tags')
-      .select('*')
-      .order('name', { ascending: true });
+    let query = 'SELECT * FROM tags WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
 
     if (filters.search) {
-      query = query.ilike('name', `%${filters.search}%`);
+      query += ` AND name ILIKE $${paramIndex}`;
+      params.push(`%${filters.search}%`);
+      paramIndex++;
     }
 
-    const { data, error } = await query;
+    query += ' ORDER BY name ASC';
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(query, params);
+    return result.rows;
   },
 
   async findById(id) {
-    const { data, error } = await supabase
-      .from('tags')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const result = await pool.query(
+      'SELECT * FROM tags WHERE id = $1',
+      [id]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows[0];
   },
 
   async findByName(name) {
-    const { data, error } = await supabase
-      .from('tags')
-      .select('*')
-      .eq('name', name)
-      .maybeSingle();
+    const result = await pool.query(
+      'SELECT * FROM tags WHERE name = $1',
+      [name]
+    );
 
-    if (error) throw error;
-    return data;
+    return result.rows[0];
   },
 
   async update(id, tagData) {
-    const { data, error } = await supabase
-      .from('tags')
-      .update(tagData)
-      .eq('id', id)
-      .select()
-      .single();
+    const { name } = tagData;
 
-    if (error) throw error;
-    return data;
+    const result = await pool.query(
+      `UPDATE tags SET name = $1 WHERE id = $2 RETURNING *`,
+      [name, id]
+    );
+
+    return result.rows[0];
   },
 
   async delete(id) {
-    const { error } = await supabase
-      .from('tags')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await pool.query('DELETE FROM tags WHERE id = $1', [id]);
     return { success: true };
   }
 };
