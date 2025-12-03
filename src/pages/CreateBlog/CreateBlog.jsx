@@ -8,6 +8,7 @@ import RichTextEditor from "../../components/FormComponents/RichTextEditor";
 import SelectField from "../../components/FormComponents/SelectField";
 import ImageUpload from "../../components/FormComponents/ImageUpload";
 import FileUpload from "../../components/FormComponents/FileUpload";
+import CategoryDropdown from "../../components/CategoryDropdown/CategoryDropdown";
 import "./CreateBlog.css";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -29,7 +30,6 @@ const CreateBlog = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
   const [places, setPlaces] = useState([]);
   const [tagSearch, setTagSearch] = useState("");
@@ -48,31 +48,10 @@ const CreateBlog = () => {
   }, []);
 
   useEffect(() => {
-    if (formData.publishTo === "HR") {
-      fetchCategories("HR");
-    } else {
-      setCategories([]);
-      setFormData(prev => ({ ...prev, categoryId: "" }));
-    }
-  }, [formData.publishTo]);
-
-  useEffect(() => {
     if (tagSearch) {
       fetchTags(tagSearch);
     }
   }, [tagSearch]);
-
-  const fetchCategories = async (parentCategory) => {
-    try {
-      const response = await fetch(`${API_URL}/categories?parentCategory=${parentCategory}`);
-      const result = await response.json();
-      if (result.success) {
-        setCategories(result.data);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
 
   const fetchTags = async (search = "") => {
     try {
@@ -301,20 +280,13 @@ const CreateBlog = () => {
             placeholder="Select a section..."
           />
 
-          {formData.publishTo === "HR" && (
-            <div className="category-field fade-in">
-              <SelectField
-                label="Category"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleInputChange}
-                options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
-                required
-                error={errors.categoryId}
-                placeholder="Select HR category..."
-              />
-            </div>
-          )}
+          <CategoryDropdown
+            value={formData.categoryId}
+            onChange={(name, value) => setFormData(prev => ({ ...prev, categoryId: value }))}
+            publishTo={formData.publishTo}
+            error={errors.categoryId}
+            required={formData.publishTo === "HR"}
+          />
         </FormSection>
 
         <FormSection title="Basic Information" icon="📝" className="animate-slide-in delay-1">

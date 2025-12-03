@@ -15,6 +15,7 @@ import CreatePoll from "./pages/CreatePoll/CreatePoll";
 import CreateDiscussion from "./pages/CreateDiscussion/CreateDiscussion";
 import CreateSubSpace from "./pages/CreateSubSpace/CreateSubSpace";
 import CreateVideo from "./pages/CreateVideo/CreateVideo";
+import CreateCategory from "./pages/CreateCategory/CreateCategory";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
@@ -134,6 +135,7 @@ const App = () => {
         <Route path="/create/discussion" element={<CreateDiscussion />} />
         <Route path="/create/subspace" element={<CreateSubSpace />} />
         <Route path="/create/video" element={<CreateVideo />} />
+        <Route path="/create/category" element={<CreateCategory />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!isCreatePage && <Footer />}

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import blogRoutes from './routes/blog.routes.js';
+import categoryRoutes from './routes/category.routes.js';
 
 dotenv.config();
 
@@ -19,7 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api', blogRoutes);
+app.use('/api/blogs', blogRoutes);
+app.use('/api/categories', categoryRoutes);
 
 app.get('/health', (req, res) => {
   res.json({

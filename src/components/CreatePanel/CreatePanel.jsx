@@ -82,6 +82,13 @@ const CreatePanel = ({ isOpen, onClose }) => {
       iconBg: "#FEE2E2",
       iconColor: "#EF4444",
     },
+    {
+      id: "categories",
+      label: "Add Categories",
+      icon: "🏷️",
+      iconBg: "#FFF7ED",
+      iconColor: "#EA580C",
+    },
   ];
 
   const handleItemClick = (item) => {
@@ -96,6 +103,7 @@ const CreatePanel = ({ isOpen, onClose }) => {
       discussion: "/create/discussion",
       polls: "/create/poll",
       videos: "/create/video",
+      categories: "/create/category",
     };
 
     if (routeMap[item.id]) {
