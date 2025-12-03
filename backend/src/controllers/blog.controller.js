@@ -6,6 +6,7 @@ export const BlogController = {
     try {
       const {
         title,
+        subject,
         content,
         contentHtml,
         content_html,
@@ -19,6 +20,7 @@ export const BlogController = {
         place_id,
         restrictedComments,
         restricted_comments,
+        restrictReplies,
         isPlaceBlog,
         is_place_blog,
         authorId,
@@ -29,18 +31,19 @@ export const BlogController = {
         imageUrls,
         image_urls,
         images,
+        contentImages,
         attachments
       } = req.body;
 
       const finalPublishTo = publishTo || publish_to;
-      const finalTitle = title;
+      const finalTitle = subject || title;
       const finalContent = content;
       const finalContentHtml = contentHtml || content_html || content;
 
       if (!finalTitle || !finalContent || !finalPublishTo) {
         return res.status(400).json({
           success: false,
-          message: 'Title, content, and publishTo are required'
+          message: 'Title/subject, content, and publishTo are required'
         });
       }
 
@@ -51,6 +54,8 @@ export const BlogController = {
         });
       }
 
+      const finalRestrictedComments = restrictReplies || restrictedComments || restricted_comments || false;
+
       const blogData = {
         title: finalTitle,
         content: finalContent,
@@ -59,7 +64,7 @@ export const BlogController = {
         category_id: (categoryId || category_id) || null,
         space_id: (spaceId || space_id) || null,
         place_id: (placeId || place_id) || null,
-        restricted_comments: (restrictedComments || restricted_comments) || false,
+        restricted_comments: finalRestrictedComments,
         is_place_blog: (isPlaceBlog || is_place_blog) || false,
         author_id: (authorId || author_id) || 1,
         status: 'published',
@@ -71,8 +76,10 @@ export const BlogController = {
       const finalTagIds = tagIds || tag_ids || [];
       if (tags && Array.isArray(tags)) {
         for (const tagName of tags) {
-          const tag = await TagModel.findOrCreate(tagName);
-          finalTagIds.push(tag.id);
+          if (typeof tagName === 'string') {
+            const tag = await TagModel.findOrCreate(tagName);
+            finalTagIds.push(tag.id);
+          }
         }
       }
 
@@ -80,29 +87,54 @@ export const BlogController = {
         await BlogModel.addTags(blog.id, finalTagIds);
       }
 
-      const finalImageUrls = imageUrls || image_urls || images || [];
+      const finalImageUrls = contentImages || imageUrls || image_urls || images || [];
       if (finalImageUrls && finalImageUrls.length > 0) {
-        await BlogModel.addImages(blog.id, finalImageUrls);
+        const imageUrlsToSave = finalImageUrls.map(img => {
+          if (typeof img === 'string') return img;
+          if (img.ref) return img.ref;
+          if (img.url) return img.url;
+          return null;
+        }).filter(Boolean);
+
+        if (imageUrlsToSave.length > 0) {
+          await BlogModel.addImages(blog.id, imageUrlsToSave);
+        }
       }
 
       if (attachments && attachments.length > 0) {
-        await BlogModel.addAttachments(blog.id, attachments);
+        const attachmentsToSave = attachments.map(att => ({
+          url: att.url || att.file_url || att.ref,
+          filename: att.name || att.filename || att.file_name || 'file',
+          size: att.size || att.file_size || 0,
+          mimeType: att.contentType || att.mimeType || att.mime_type || 'application/octet-stream'
+        })).filter(att => att.url);
+
+        if (attachmentsToSave.length > 0) {
+          await BlogModel.addAttachments(blog.id, attachmentsToSave);
+        }
       }
 
-      const blogTags = finalTagIds.length > 0 ? await BlogModel.getTags(blog.id) : [];
-      const blogImages = finalImageUrls.length > 0 ? await BlogModel.getImages(blog.id) : [];
-      const blogAttachments = attachments ? await BlogModel.getAttachments(blog.id) : [];
+      const blogTags = await BlogModel.getTags(blog.id);
+      const blogImages = await BlogModel.getImages(blog.id);
+      const blogAttachments = await BlogModel.getAttachments(blog.id);
+      const author = await BlogModel.getAuthor(blog.author_id);
 
-      res.status(201).json({
-        success: true,
-        message: 'Blog created successfully',
-        data: {
-          ...blog,
-          tags: blogTags,
-          images: blogImages,
-          attachments: blogAttachments
-        }
-      });
+      let place = null;
+      if (blog.place_id) {
+        const placeResult = await BlogModel.findById(blog.id);
+        place = placeResult.place;
+      }
+
+      const jiveFormatBlog = BlogModel.transformToJiveFormat(
+        blog,
+        blogTags,
+        blogImages,
+        blogAttachments,
+        author,
+        place
+      );
+
+      res.status(201).json(jiveFormatBlog);
     } catch (error) {
       console.error('Error creating blog:', error);
       res.status(500).json({
@@ -126,7 +158,8 @@ export const BlogController = {
         place_id,
         search,
         limit,
-        status
+        status,
+        jiveFormat
       } = req.query;
 
       const filters = {};
@@ -145,6 +178,18 @@ export const BlogController = {
           const tags = await BlogModel.getTags(blog.id);
           const images = await BlogModel.getImages(blog.id);
           const attachments = await BlogModel.getAttachments(blog.id);
+          const author = await BlogModel.getAuthor(blog.author_id);
+
+          if (jiveFormat === 'true') {
+            return BlogModel.transformToJiveFormat(
+              blog,
+              tags,
+              images,
+              attachments,
+              author,
+              blog.place
+            );
+          }
 
           return {
             ...blog,
@@ -155,10 +200,14 @@ export const BlogController = {
         })
       );
 
-      res.status(200).json({
-        success: true,
-        data: blogsWithRelations
-      });
+      if (jiveFormat === 'true') {
+        res.status(200).json(blogsWithRelations);
+      } else {
+        res.status(200).json({
+          success: true,
+          data: blogsWithRelations
+        });
+      }
     } catch (error) {
       console.error('Error fetching blogs:', error);
       res.status(500).json({
@@ -172,6 +221,7 @@ export const BlogController = {
   async getBlogById(req, res) {
     try {
       const { id } = req.params;
+      const { jiveFormat } = req.query;
 
       const blog = await BlogModel.findById(id);
 
@@ -185,16 +235,29 @@ export const BlogController = {
       const tags = await BlogModel.getTags(blog.id);
       const images = await BlogModel.getImages(blog.id);
       const attachments = await BlogModel.getAttachments(blog.id);
+      const author = await BlogModel.getAuthor(blog.author_id);
 
-      res.status(200).json({
-        success: true,
-        data: {
-          ...blog,
+      if (jiveFormat === 'true') {
+        const jiveFormatBlog = BlogModel.transformToJiveFormat(
+          blog,
           tags,
           images,
-          attachments
-        }
-      });
+          attachments,
+          author,
+          blog.place
+        );
+        res.status(200).json(jiveFormatBlog);
+      } else {
+        res.status(200).json({
+          success: true,
+          data: {
+            ...blog,
+            tags,
+            images,
+            attachments
+          }
+        });
+      }
     } catch (error) {
       console.error('Error fetching blog:', error);
       res.status(500).json({
@@ -230,6 +293,10 @@ export const BlogController = {
         updateData.category_id = finalCategoryId;
       }
 
+      if (updateData.subject) {
+        updateData.title = updateData.subject;
+        delete updateData.subject;
+      }
       if (updateData.categoryId) delete updateData.categoryId;
       if (updateData.placeId) {
         updateData.place_id = updateData.placeId;
@@ -238,6 +305,10 @@ export const BlogController = {
       if (updateData.spaceId) {
         updateData.space_id = updateData.spaceId;
         delete updateData.spaceId;
+      }
+      if (updateData.restrictReplies !== undefined) {
+        updateData.restricted_comments = updateData.restrictReplies;
+        delete updateData.restrictReplies;
       }
 
       const blog = await BlogModel.update(id, updateData);
@@ -249,11 +320,21 @@ export const BlogController = {
         });
       }
 
-      res.status(200).json({
-        success: true,
-        message: 'Blog updated successfully',
-        data: blog
-      });
+      const tags = await BlogModel.getTags(blog.id);
+      const images = await BlogModel.getImages(blog.id);
+      const attachments = await BlogModel.getAttachments(blog.id);
+      const author = await BlogModel.getAuthor(blog.author_id);
+
+      const jiveFormatBlog = BlogModel.transformToJiveFormat(
+        blog,
+        tags,
+        images,
+        attachments,
+        author,
+        null
+      );
+
+      res.status(200).json(jiveFormatBlog);
     } catch (error) {
       console.error('Error updating blog:', error);
       res.status(500).json({

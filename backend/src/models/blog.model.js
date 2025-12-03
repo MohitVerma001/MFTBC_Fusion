@@ -283,6 +283,100 @@ export const BlogModel = {
     );
 
     return result.rows;
+  },
+
+  async getAuthor(authorId) {
+    if (!authorId) {
+      return {
+        id: '1',
+        displayName: 'Anonymous User',
+        type: 'person'
+      };
+    }
+
+    const result = await pool.query(
+      'SELECT id, display_name, email FROM users WHERE id = $1',
+      [authorId]
+    );
+
+    if (result.rows.length === 0) {
+      return {
+        id: String(authorId),
+        displayName: 'Unknown User',
+        type: 'person'
+      };
+    }
+
+    const user = result.rows[0];
+    return {
+      id: String(user.id),
+      displayName: user.display_name || user.email || 'User',
+      type: 'person'
+    };
+  },
+
+  transformToJiveFormat(blog, tags = [], images = [], attachments = [], author = null, place = null) {
+    const contentHtml = blog.content_html || blog.content || '';
+    const wrappedContent = contentHtml.startsWith('<body>')
+      ? contentHtml
+      : `<body>${contentHtml}</body>`;
+
+    const defaultPlace = {
+      id: '6220',
+      name: 'MFTBC',
+      type: 'blog'
+    };
+
+    const parentPlace = place && place.id
+      ? {
+          id: String(place.id),
+          name: place.name || 'MFTBC',
+          type: 'blog'
+        }
+      : defaultPlace;
+
+    const transformedAuthor = author || {
+      id: String(blog.author_id || 1),
+      displayName: 'Anonymous User',
+      type: 'person'
+    };
+
+    const contentImages = images.map(img => ({
+      id: String(img.id),
+      ref: img.image_url,
+      name: img.image_url.split('/').pop()
+    }));
+
+    const transformedAttachments = attachments.map(att => ({
+      id: String(att.id),
+      name: att.file_name,
+      url: att.file_url,
+      size: att.file_size,
+      contentType: att.mime_type
+    }));
+
+    const tagNames = tags.map(tag => tag.name);
+
+    return {
+      id: String(blog.id),
+      subject: blog.title,
+      content: {
+        text: wrappedContent
+      },
+      published: blog.published_at ? new Date(blog.published_at).toISOString() : new Date().toISOString(),
+      updated: blog.updated_at ? new Date(blog.updated_at).toISOString() : new Date().toISOString(),
+      author: transformedAuthor,
+      tags: tagNames,
+      likeCount: blog.like_count || 0,
+      followerCount: 0,
+      viewCount: blog.view_count || 0,
+      attachments: transformedAttachments,
+      contentImages: contentImages,
+      parentPlace: parentPlace,
+      question: false,
+      restrictReplies: blog.restricted_comments || false,
+      type: 'post'
+    };
   }
 };
 

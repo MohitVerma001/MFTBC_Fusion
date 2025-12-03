@@ -183,47 +183,94 @@ const CreateBlog = () => {
     setLoading(true);
 
     try {
-      const formDataToSend = new FormData();
+      const imageUrls = [];
+      for (const image of formData.contentImages) {
+        if (image.file) {
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', image.file);
 
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('content', formData.content);
-      formDataToSend.append('publishTo', formData.publishTo);
-      formDataToSend.append('restrictedComments', formData.restrictedComments);
-      formDataToSend.append('isPlaceBlog', formData.isPlaceBlog);
-      formDataToSend.append('authorId', 'current-user-id');
+          const uploadResponse = await fetch(`${API_URL}/upload/single`, {
+            method: 'POST',
+            body: uploadFormData,
+          });
+
+          const uploadResult = await uploadResponse.json();
+          if (uploadResult.success) {
+            imageUrls.push(uploadResult.data.url);
+          }
+        } else if (image.url) {
+          imageUrls.push(image.url);
+        }
+      }
+
+      const attachmentData = [];
+      for (const attachment of formData.attachments) {
+        if (attachment.file) {
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', attachment.file);
+
+          const uploadResponse = await fetch(`${API_URL}/upload/single`, {
+            method: 'POST',
+            body: uploadFormData,
+          });
+
+          const uploadResult = await uploadResponse.json();
+          if (uploadResult.success) {
+            attachmentData.push({
+              url: uploadResult.data.url,
+              name: uploadResult.data.filename,
+              size: uploadResult.data.size,
+              contentType: uploadResult.data.mimeType
+            });
+          }
+        } else if (attachment.url) {
+          attachmentData.push({
+            url: attachment.url,
+            name: attachment.name || 'file',
+            size: attachment.size || 0,
+            contentType: attachment.type || 'application/octet-stream'
+          });
+        }
+      }
+
+      const wrappedContent = formData.content.startsWith('<body>')
+        ? formData.content
+        : `<body>${formData.content}</body>`;
+
+      const blogPayload = {
+        subject: formData.title,
+        content: formData.content,
+        contentHtml: wrappedContent,
+        publishTo: formData.publishTo,
+        restrictReplies: formData.restrictedComments,
+        isPlaceBlog: formData.isPlaceBlog,
+        tags: formData.tags.map(t => t.name),
+        contentImages: imageUrls,
+        attachments: attachmentData,
+        authorId: 1
+      };
 
       if (formData.categoryId) {
-        formDataToSend.append('categoryId', formData.categoryId);
+        blogPayload.categoryId = formData.categoryId;
       }
 
       if (formData.placeId) {
-        formDataToSend.append('placeId', formData.placeId);
+        blogPayload.placeId = formData.placeId;
       }
-
-      if (formData.tags.length > 0) {
-        formDataToSend.append('tagIds', JSON.stringify(formData.tags.map(t => t.id)));
-      }
-
-      formData.contentImages.forEach((image) => {
-        if (image.file) {
-          formDataToSend.append('images', image.file);
-        }
-      });
-
-      formData.attachments.forEach((attachment) => {
-        if (attachment.file) {
-          formDataToSend.append('attachments', attachment.file);
-        }
-      });
 
       const response = await fetch(`${API_URL}/blogs`, {
         method: 'POST',
-        body: formDataToSend,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(blogPayload),
       });
 
       const result = await response.json();
 
-      if (result.success) {
+      if (result && result.id) {
+        console.log('Blog created successfully:', result);
+
         const successMessage = document.createElement('div');
         successMessage.className = 'success-animation';
         successMessage.innerHTML = `
@@ -236,6 +283,7 @@ const CreateBlog = () => {
             </div>
           </div>
           <h2>Blog Published Successfully!</h2>
+          <p>Blog ID: ${result.id}</p>
         `;
         document.body.appendChild(successMessage);
 
@@ -247,8 +295,10 @@ const CreateBlog = () => {
             navigate("/");
           }
         }, 2000);
-      } else {
+      } else if (result.success === false) {
         alert(`Failed to publish blog: ${result.message}`);
+      } else {
+        alert('Failed to publish blog. Please try again.');
       }
     } catch (error) {
       console.error("Error creating blog:", error);
