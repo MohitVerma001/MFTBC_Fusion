@@ -10,14 +10,17 @@ import './CreateCategory.css';
 
 const CreateCategory = () => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     type: '',
     name: '',
     description: '',
-    images: [],
-    image_url: '',
+
+    // ⭐ Separate images for each section
+    category_images: [],
+    link_icon_images: [],
+
     link_url: '',
-    link_icon_url: '',
     is_published: true
   });
 
@@ -31,6 +34,9 @@ const CreateCategory = () => {
     { value: 'Link', label: 'Link' }
   ];
 
+  /** ------------------------------
+   * FORM CHANGE HANDLER
+   --------------------------------*/
   const handleChange = (nameOrEvent, value) => {
     let fieldName, fieldValue;
 
@@ -50,6 +56,9 @@ const CreateCategory = () => {
     }
   };
 
+  /** ------------------------------
+   * VALIDATION
+   --------------------------------*/
   const validateForm = () => {
     const newErrors = {};
 
@@ -57,18 +66,22 @@ const CreateCategory = () => {
     if (!formData.name) newErrors.name = 'Name is required';
 
     if (formData.type === 'Category' && !formData.description)
-      newErrors.description = 'Description is required for categories';
+      newErrors.description = 'Description is required';
 
     if (formData.type === 'Link' && !formData.link_url)
-      newErrors.link_url = 'Link URL is required for links';
+      newErrors.link_url = 'Link URL is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /** ------------------------------
+   * SUBMIT HANDLER
+   --------------------------------*/
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     setIsSubmitting(true);
 
     try {
@@ -77,10 +90,22 @@ const CreateCategory = () => {
       const dataToSubmit = {
         type: formData.type,
         name: formData.name,
-        description: formData.type === 'Category' ? formData.description : null,
-        image_url: formData.images?.[0]?.url || null,
+
+        description:
+          formData.type === 'Category' ? formData.description : null,
+
+        image_url:
+          formData.type === 'Category'
+            ? formData.category_images?.[0]?.url || null
+            : null,
+
         link_url: formData.type === 'Link' ? formData.link_url : null,
-        link_icon_url: formData.type === 'Link' ? formData.link_icon_url : null,
+
+        link_icon_url:
+          formData.type === 'Link'
+            ? formData.link_icon_images?.[0]?.url || null
+            : null,
+
         is_published: formData.is_published
       };
 
@@ -91,11 +116,12 @@ const CreateCategory = () => {
       });
 
       const result = await response.json();
+
       if (result.success) {
         setSubmitSuccess(true);
         setTimeout(() => navigate('/'), 2000);
       } else {
-        setErrors({ submit: result.message || 'Failed to create category' });
+        setErrors({ submit: result.message || 'Failed to create entry' });
       }
     } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' });
@@ -108,8 +134,8 @@ const CreateCategory = () => {
     <div className="create-category-page">
       <FormWrapper title="Add Category" onSubmit={handleSubmit}>
 
-        {/* ⭐ ADD BACK THIS BLOCK */}
-        <FormSection title="Category Type">
+        {/* ⭐ COMMON - Type Selection */}
+        <FormSection title="Select Type">
           <SelectField
             label="Select Type"
             name="type"
@@ -121,9 +147,10 @@ const CreateCategory = () => {
           />
         </FormSection>
 
-        {/* ⭐ Now Category section will show properly */}
+        {/* ⭐ CATEGORY SECTION */}
         {formData.type === 'Category' && (
           <FormSection title="Category Information">
+
             <TextField
               label="Category Name"
               name="name"
@@ -145,9 +172,9 @@ const CreateCategory = () => {
 
             <ImageUpload
               label="Category Image"
-              images={formData.images}
-              onImagesChange={(images) =>
-                setFormData(prev => ({ ...prev, images }))
+              images={formData.category_images}
+              onImagesChange={(category_images) =>
+                setFormData(prev => ({ ...prev, category_images }))
               }
             />
 
@@ -156,11 +183,56 @@ const CreateCategory = () => {
                 className="form-check-input"
                 type="checkbox"
                 checked={formData.is_published}
-                onChange={(e) => handleChange('is_published', e.target.checked)}
+                onChange={(e) =>
+                  handleChange('is_published', e.target.checked)
+                }
               />
-              <label className="form-check-label">
-                Publish Category
-              </label>
+              <label className="form-check-label">Publish Category</label>
+            </div>
+          </FormSection>
+        )}
+
+        {/* ⭐ LINK SECTION */}
+        {formData.type === 'Link' && (
+          <FormSection title="Link Information">
+
+            <TextField
+              label="Link Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              error={errors.name}
+              required
+            />
+
+            <TextField
+              label="Link URL"
+              name="link_url"
+              value={formData.link_url}
+              onChange={handleChange}
+              error={errors.link_url}
+              placeholder="https://example.com"
+              required
+            />
+
+            <ImageUpload
+              label="Link Icon"
+              images={formData.link_icon_images}
+              onImagesChange={(link_icon_images) =>
+                setFormData(prev => ({ ...prev, link_icon_images }))
+              }
+            />
+
+            <div className="form-check form-switch mt-4">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={formData.is_published}
+                onChange={(e) =>
+                  handleChange('is_published', e.target.checked)
+                }
+              />
+              <label className="form-check-label">Publish Link</label>
             </div>
           </FormSection>
         )}
