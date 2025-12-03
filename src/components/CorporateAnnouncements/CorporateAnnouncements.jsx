@@ -1,5 +1,4 @@
 import React from "react";
-import ImageLoader from "../ImageLoader/ImageLoader";
 import "./CorporateAnnouncements.css";
 
 const CorporateAnnouncements = () => {
@@ -24,18 +23,17 @@ const CorporateAnnouncements = () => {
           <div className="col-12">
             <div className="announcement-carousel">
               <div className="carousel-image-container">
-                <ImageLoader
+                <img
                   src="/img-497.png"
                   alt="Corporate announcement"
                   className="carousel-image"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 <div className="carousel-overlay"></div>
 
                 {/* Carousel Content */}
                 <div className="carousel-content">
                   <div className="carousel-badge">
-                    <ImageLoader src="/div-501.svg" alt="" className="badge-icon" />
+                    <img src="/div-501.svg" alt="" className="badge-icon" />
                     <span>CEO Message</span>
                   </div>
                   <h3 className="carousel-title">
@@ -46,10 +44,10 @@ const CorporateAnnouncements = () => {
 
                 {/* Carousel Controls */}
                 <button className="carousel-control-prev">
-                  <ImageLoader src="/button-564.svg" alt="Previous" />
+                  <img src="/button-564.svg" alt="Previous" />
                 </button>
                 <button className="carousel-control-next">
-                  <ImageLoader src="/button-567.svg" alt="Next" />
+                  <img src="/button-567.svg" alt="Next" />
                 </button>
 
                 {/* Carousel Indicators */}
@@ -69,7 +67,7 @@ const CorporateAnnouncements = () => {
           {complianceCards.map((card, index) => (
             <div key={index} className="col-12 col-sm-6 col-lg-3">
               <div className="compliance-card">
-                <ImageLoader src={card.icon} alt="" className="compliance-icon" />
+                <img src={card.icon} alt="" className="compliance-icon" />
                 <h4 className="compliance-title">{card.title}</h4>
               </div>
             </div>

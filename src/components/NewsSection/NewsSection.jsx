@@ -1,5 +1,4 @@
 import React from "react";
-import ImageLoader from "../ImageLoader/ImageLoader";
 import "./NewsSection.css";
 
 const NewsSection = () => {
@@ -60,7 +59,7 @@ const NewsSection = () => {
             <div key={index} className="col-12 col-md-6 col-lg-4">
               <div className="news-card">
                 <div className="news-image">
-                  <ImageLoader src={news.image} alt={news.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={news.image} alt={news.title} />
                 </div>
                 <div className="news-content">
                   <h3 className="news-title">{news.title}</h3>
