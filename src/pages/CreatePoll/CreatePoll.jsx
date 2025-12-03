@@ -4,7 +4,7 @@ import Header from "../../components/Header/Header";
 import FormWrapper from "../../components/FormComponents/FormWrapper";
 import FormSection from "../../components/FormComponents/FormSection";
 import TextField from "../../components/FormComponents/TextField";
-import TextArea from "../../components/FormComponents/TextArea";
+import RichTextEditor from "../../components/FormComponents/RichTextEditor";
 import SelectField from "../../components/FormComponents/SelectField";
 import DynamicList from "../../components/FormComponents/DynamicList";
 import TagInput from "../../components/FormComponents/TagInput";
@@ -37,6 +37,13 @@ const CreatePoll = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleContentChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      contentText: value,
+    }));
   };
 
   const validateForm = () => {
@@ -114,13 +121,11 @@ const CreatePoll = () => {
             error={errors.subject}
             icon="❓"
           />
-          <TextArea
+          <RichTextEditor
             label="Additional Context (Optional)"
-            name="contentText"
             value={formData.contentText}
-            onChange={handleInputChange}
+            onChange={handleContentChange}
             placeholder="Provide more details about this poll..."
-            rows={4}
           />
         </FormSection>
 

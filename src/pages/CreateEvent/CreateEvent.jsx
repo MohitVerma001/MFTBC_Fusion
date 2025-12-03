@@ -4,7 +4,7 @@ import Header from "../../components/Header/Header";
 import FormWrapper from "../../components/FormComponents/FormWrapper";
 import FormSection from "../../components/FormComponents/FormSection";
 import TextField from "../../components/FormComponents/TextField";
-import TextArea from "../../components/FormComponents/TextArea";
+import RichTextEditor from "../../components/FormComponents/RichTextEditor";
 import SelectField from "../../components/FormComponents/SelectField";
 import DateTimeField from "../../components/FormComponents/DateTimeField";
 import TagInput from "../../components/FormComponents/TagInput";
@@ -39,6 +39,16 @@ const CreateEvent = () => {
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleContentChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      contentText: value,
+    }));
+    if (errors.contentText) {
+      setErrors((prev) => ({ ...prev, contentText: "" }));
     }
   };
 
@@ -122,13 +132,11 @@ const CreateEvent = () => {
             error={errors.subject}
             icon="🎯"
           />
-          <TextArea
+          <RichTextEditor
             label="Description"
-            name="contentText"
             value={formData.contentText}
-            onChange={handleInputChange}
+            onChange={handleContentChange}
             placeholder="Describe the event..."
-            rows={6}
             required
             error={errors.contentText}
           />

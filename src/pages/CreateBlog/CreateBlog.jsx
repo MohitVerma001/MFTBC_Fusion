@@ -4,7 +4,7 @@ import Header from "../../components/Header/Header";
 import FormWrapper from "../../components/FormComponents/FormWrapper";
 import FormSection from "../../components/FormComponents/FormSection";
 import TextField from "../../components/FormComponents/TextField";
-import TextArea from "../../components/FormComponents/TextArea";
+import RichTextEditor from "../../components/FormComponents/RichTextEditor";
 import SelectField from "../../components/FormComponents/SelectField";
 import TagInput from "../../components/FormComponents/TagInput";
 import ImageUpload from "../../components/FormComponents/ImageUpload";
@@ -38,6 +38,16 @@ const CreateBlog = () => {
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleContentChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      contentText: value,
+    }));
+    if (errors.contentText) {
+      setErrors((prev) => ({ ...prev, contentText: "" }));
     }
   };
 
@@ -147,13 +157,11 @@ const CreateBlog = () => {
             required
             error={errors.subject}
           />
-          <TextArea
+          <RichTextEditor
             label="Content"
-            name="contentText"
             value={formData.contentText}
-            onChange={handleInputChange}
+            onChange={handleContentChange}
             placeholder="Write your blog content here..."
-            rows={10}
             required
             error={errors.contentText}
           />

@@ -4,7 +4,7 @@ import Header from "../../components/Header/Header";
 import FormWrapper from "../../components/FormComponents/FormWrapper";
 import FormSection from "../../components/FormComponents/FormSection";
 import TextField from "../../components/FormComponents/TextField";
-import TextArea from "../../components/FormComponents/TextArea";
+import RichTextEditor from "../../components/FormComponents/RichTextEditor";
 import SelectField from "../../components/FormComponents/SelectField";
 import ImageUpload from "../../components/FormComponents/ImageUpload";
 
@@ -34,6 +34,16 @@ const CreateSubSpace = () => {
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleDescriptionChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      description: value,
+    }));
+    if (errors.description) {
+      setErrors((prev) => ({ ...prev, description: "" }));
     }
   };
 
@@ -110,13 +120,11 @@ const CreateSubSpace = () => {
             error={errors.name}
             icon="🏷️"
           />
-          <TextArea
+          <RichTextEditor
             label="Description"
-            name="description"
             value={formData.description}
-            onChange={handleInputChange}
+            onChange={handleDescriptionChange}
             placeholder="Describe the purpose of this subspace..."
-            rows={8}
             required
             error={errors.description}
           />
