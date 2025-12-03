@@ -1,14 +1,25 @@
-import pool from '../../database.js';
+import pool from '../utils/db.js';
 
 export const PlaceModel = {
   async create(placeData) {
-    const { name, description, type } = placeData;
+    const { name, description, type, address, city, state, country, postal_code, latitude, longitude } = placeData;
 
     const result = await pool.query(
-      `INSERT INTO places (name, description, type, created_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO places (name, description, type, address, city, state, country, postal_code, latitude, longitude, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
        RETURNING *`,
-      [name, description, type]
+      [
+        name,
+        description || '',
+        type || 'office',
+        address || null,
+        city || null,
+        state || null,
+        country || null,
+        postal_code || null,
+        latitude || null,
+        longitude || null
+      ]
     );
 
     return result.rows[0];
@@ -22,6 +33,12 @@ export const PlaceModel = {
     if (filters.type) {
       query += ` AND type = $${paramIndex}`;
       params.push(filters.type);
+      paramIndex++;
+    }
+
+    if (filters.search) {
+      query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex} OR city ILIKE $${paramIndex})`;
+      params.push(`%${filters.search}%`);
       paramIndex++;
     }
 
@@ -46,10 +63,16 @@ export const PlaceModel = {
     let paramIndex = 1;
 
     Object.keys(placeData).forEach(key => {
-      fields.push(`${key} = $${paramIndex}`);
-      values.push(placeData[key]);
-      paramIndex++;
+      if (key !== 'id') {
+        fields.push(`${key} = $${paramIndex}`);
+        values.push(placeData[key]);
+        paramIndex++;
+      }
     });
+
+    if (fields.length === 0) {
+      return await this.findById(id);
+    }
 
     values.push(id);
 

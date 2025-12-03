@@ -1,4 +1,4 @@
-import pool from '../../database.js';
+import pool from '../utils/db.js';
 
 export const TagModel = {
   async create(tagData) {
@@ -8,14 +8,10 @@ export const TagModel = {
     const result = await pool.query(
       `INSERT INTO tags (name, slug, created_at)
        VALUES ($1, $2, NOW())
-       ON CONFLICT (name) DO NOTHING
+       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
        RETURNING *`,
       [name, slug]
     );
-
-    if (result.rows.length === 0) {
-      return await this.findByName(name);
-    }
 
     return result.rows[0];
   },
@@ -55,12 +51,21 @@ export const TagModel = {
     return result.rows[0];
   },
 
+  async findOrCreate(name) {
+    let tag = await this.findByName(name);
+    if (!tag) {
+      tag = await this.create({ name });
+    }
+    return tag;
+  },
+
   async update(id, tagData) {
     const { name } = tagData;
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
     const result = await pool.query(
-      `UPDATE tags SET name = $1 WHERE id = $2 RETURNING *`,
-      [name, id]
+      `UPDATE tags SET name = $1, slug = $2 WHERE id = $3 RETURNING *`,
+      [name, slug, id]
     );
 
     return result.rows[0];

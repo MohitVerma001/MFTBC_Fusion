@@ -1,4 +1,4 @@
-import pool from '../../database.js';
+import pool from '../utils/db.js';
 
 export const BlogModel = {
   async create(blogData) {
@@ -26,15 +26,15 @@ export const BlogModel = {
       RETURNING *`,
       [
         title,
-        content,
-        content_html,
+        content || '',
+        content_html || content || '',
         publish_to,
-        category_id,
-        space_id,
-        place_id,
+        category_id || null,
+        space_id || null,
+        place_id || null,
         restricted_comments || false,
         is_place_blog || false,
-        author_id,
+        author_id || 1,
         status || 'published',
         published_at || new Date()
       ]
@@ -47,9 +47,18 @@ export const BlogModel = {
     let query = `
       SELECT
         b.*,
-        json_build_object('id', c.id, 'name', c.name, 'description', c.description) as category,
-        json_build_object('id', p.id, 'name', p.name) as place,
-        json_build_object('id', s.id, 'name', s.name) as subspace
+        COALESCE(
+          json_build_object('id', c.id, 'name', c.name, 'description', c.description, 'image_url', c.image_url),
+          NULL
+        ) as category,
+        COALESCE(
+          json_build_object('id', p.id, 'name', p.name, 'description', p.description),
+          NULL
+        ) as place,
+        COALESCE(
+          json_build_object('id', s.id, 'name', s.name, 'description', s.description),
+          NULL
+        ) as subspace
       FROM blogs b
       LEFT JOIN categories c ON b.category_id = c.id
       LEFT JOIN places p ON b.place_id = p.id
@@ -66,9 +75,21 @@ export const BlogModel = {
       paramIndex++;
     }
 
+    if (filters.publishTo) {
+      query += ` AND b.publish_to = $${paramIndex}`;
+      params.push(filters.publishTo);
+      paramIndex++;
+    }
+
     if (filters.category_id) {
       query += ` AND b.category_id = $${paramIndex}`;
       params.push(filters.category_id);
+      paramIndex++;
+    }
+
+    if (filters.categoryId) {
+      query += ` AND b.category_id = $${paramIndex}`;
+      params.push(filters.categoryId);
       paramIndex++;
     }
 
@@ -78,13 +99,37 @@ export const BlogModel = {
       paramIndex++;
     }
 
-    if (filters.is_published !== undefined) {
+    if (filters.place_id) {
+      query += ` AND b.place_id = $${paramIndex}`;
+      params.push(filters.place_id);
+      paramIndex++;
+    }
+
+    if (filters.placeId) {
+      query += ` AND b.place_id = $${paramIndex}`;
+      params.push(filters.placeId);
+      paramIndex++;
+    }
+
+    if (filters.search) {
+      query += ` AND (b.title ILIKE $${paramIndex} OR b.content ILIKE $${paramIndex})`;
+      params.push(`%${filters.search}%`);
+      paramIndex++;
+    }
+
+    if (filters.status) {
       query += ` AND b.status = $${paramIndex}`;
-      params.push(filters.is_published ? 'published' : 'draft');
+      params.push(filters.status);
       paramIndex++;
     }
 
     query += ` ORDER BY b.created_at DESC`;
+
+    if (filters.limit) {
+      query += ` LIMIT $${paramIndex}`;
+      params.push(filters.limit);
+      paramIndex++;
+    }
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -94,9 +139,18 @@ export const BlogModel = {
     const result = await pool.query(
       `SELECT
         b.*,
-        json_build_object('id', c.id, 'name', c.name, 'description', c.description, 'image_url', c.image_url) as category,
-        json_build_object('id', p.id, 'name', p.name, 'description', p.description) as place,
-        json_build_object('id', s.id, 'name', s.name, 'description', s.description) as subspace
+        COALESCE(
+          json_build_object('id', c.id, 'name', c.name, 'description', c.description, 'image_url', c.image_url),
+          NULL
+        ) as category,
+        COALESCE(
+          json_build_object('id', p.id, 'name', p.name, 'description', p.description),
+          NULL
+        ) as place,
+        COALESCE(
+          json_build_object('id', s.id, 'name', s.name, 'description', s.description),
+          NULL
+        ) as subspace
       FROM blogs b
       LEFT JOIN categories c ON b.category_id = c.id
       LEFT JOIN places p ON b.place_id = p.id
@@ -114,10 +168,16 @@ export const BlogModel = {
     let paramIndex = 1;
 
     Object.keys(blogData).forEach(key => {
-      fields.push(`${key} = $${paramIndex}`);
-      values.push(blogData[key]);
-      paramIndex++;
+      if (key !== 'id') {
+        fields.push(`${key} = $${paramIndex}`);
+        values.push(blogData[key]);
+        paramIndex++;
+      }
     });
+
+    if (fields.length === 0) {
+      return await this.findById(id);
+    }
 
     fields.push(`updated_at = NOW()`);
     values.push(id);
@@ -136,12 +196,17 @@ export const BlogModel = {
   },
 
   async addTags(blogId, tagIds) {
-    const values = tagIds.map((tagId, index) =>
+    if (!tagIds || tagIds.length === 0) return [];
+
+    const values = tagIds.map((_, index) =>
       `($1, $${index + 2})`
     ).join(', ');
 
     const result = await pool.query(
-      `INSERT INTO blog_tags (blog_id, tag_id) VALUES ${values} RETURNING *`,
+      `INSERT INTO blog_tags (blog_id, tag_id)
+       VALUES ${values}
+       ON CONFLICT (blog_id, tag_id) DO NOTHING
+       RETURNING *`,
       [blogId, ...tagIds]
     );
 
@@ -160,8 +225,15 @@ export const BlogModel = {
     return result.rows;
   },
 
+  async removeTags(blogId) {
+    await pool.query('DELETE FROM blog_tags WHERE blog_id = $1', [blogId]);
+    return { success: true };
+  },
+
   async addImages(blogId, imageUrls) {
-    const values = imageUrls.map((url, index) =>
+    if (!imageUrls || imageUrls.length === 0) return [];
+
+    const values = imageUrls.map((_, index) =>
       `($1, $${index + 2}, NOW())`
     ).join(', ');
 
@@ -175,7 +247,7 @@ export const BlogModel = {
 
   async getImages(blogId) {
     const result = await pool.query(
-      'SELECT * FROM blog_images WHERE blog_id = $1',
+      'SELECT * FROM blog_images WHERE blog_id = $1 ORDER BY display_order, created_at',
       [blogId]
     );
 
@@ -183,6 +255,8 @@ export const BlogModel = {
   },
 
   async addAttachments(blogId, attachments) {
+    if (!attachments || attachments.length === 0) return [];
+
     const values = attachments.map((_, index) => {
       const base = index * 4;
       return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, NOW())`;
@@ -190,7 +264,7 @@ export const BlogModel = {
 
     const params = [blogId];
     attachments.forEach(att => {
-      params.push(att.url, att.filename, att.size, att.mimeType);
+      params.push(att.url || att.file_url, att.filename || att.file_name, att.size || att.file_size || 0, att.mimeType || att.mime_type || 'application/octet-stream');
     });
 
     const result = await pool.query(

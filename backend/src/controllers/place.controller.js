@@ -3,20 +3,14 @@ import { PlaceModel } from '../models/place.model.js';
 export const PlaceController = {
   async createPlace(req, res) {
     try {
-      const { name, description, type } = req.body;
+      const placeData = req.body;
 
-      if (!name) {
+      if (!placeData.name) {
         return res.status(400).json({
           success: false,
-          message: 'Place name is required'
+          message: 'Name is required'
         });
       }
-
-      const placeData = {
-        name,
-        description: description || null,
-        type: type || null
-      };
 
       const place = await PlaceModel.create(placeData);
 
@@ -37,10 +31,11 @@ export const PlaceController = {
 
   async getAllPlaces(req, res) {
     try {
-      const { type } = req.query;
+      const { type, search } = req.query;
 
       const filters = {};
       if (type) filters.type = type;
+      if (search) filters.search = search;
 
       const places = await PlaceModel.findAll(filters);
 
@@ -61,6 +56,7 @@ export const PlaceController = {
   async getPlaceById(req, res) {
     try {
       const { id } = req.params;
+
       const place = await PlaceModel.findById(id);
 
       if (!place) {
@@ -90,6 +86,13 @@ export const PlaceController = {
       const updateData = req.body;
 
       const place = await PlaceModel.update(id, updateData);
+
+      if (!place) {
+        return res.status(404).json({
+          success: false,
+          message: 'Place not found'
+        });
+      }
 
       res.status(200).json({
         success: true,

@@ -3,22 +3,14 @@ import { SubspaceModel } from '../models/subspace.model.js';
 export const SubspaceController = {
   async createSubspace(req, res) {
     try {
-      const { name, description, content_html, image_url, is_published } = req.body;
+      const subspaceData = req.body;
 
-      if (!name) {
+      if (!subspaceData.name) {
         return res.status(400).json({
           success: false,
-          message: 'Subspace name is required'
+          message: 'Name is required'
         });
       }
-
-      const subspaceData = {
-        name,
-        description: description || null,
-        content_html: content_html || null,
-        image_url: image_url || null,
-        is_published: is_published !== undefined ? is_published : true
-      };
 
       const subspace = await SubspaceModel.create(subspaceData);
 
@@ -39,12 +31,11 @@ export const SubspaceController = {
 
   async getAllSubspaces(req, res) {
     try {
-      const { is_published } = req.query;
+      const { is_published, search } = req.query;
 
       const filters = {};
-      if (is_published !== undefined) {
-        filters.is_published = is_published === 'true';
-      }
+      if (is_published !== undefined) filters.is_published = is_published === 'true';
+      if (search) filters.search = search;
 
       const subspaces = await SubspaceModel.findAll(filters);
 
@@ -65,6 +56,7 @@ export const SubspaceController = {
   async getSubspaceById(req, res) {
     try {
       const { id } = req.params;
+
       const subspace = await SubspaceModel.findById(id);
 
       if (!subspace) {
@@ -94,6 +86,13 @@ export const SubspaceController = {
       const updateData = req.body;
 
       const subspace = await SubspaceModel.update(id, updateData);
+
+      if (!subspace) {
+        return res.status(404).json({
+          success: false,
+          message: 'Subspace not found'
+        });
+      }
 
       res.status(200).json({
         success: true,

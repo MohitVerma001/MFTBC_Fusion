@@ -1,10 +1,10 @@
 import express from 'express';
 import { UploadController } from '../controllers/upload.controller.js';
-import { uploadMiddleware } from '../middleware/upload.middleware.js';
+import upload from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
-router.post('/', uploadMiddleware.single('file'), UploadController.uploadFile);
-router.post('/multiple', uploadMiddleware.array('files', 10), UploadController.uploadMultiple);
+router.post('/single', upload.single('file'), UploadController.uploadFile);
+router.post('/multiple', upload.array('files', 10), UploadController.uploadMultipleFiles);
 
 export default router;

@@ -1,4 +1,4 @@
-import pool from '../../database.js';
+import pool from '../utils/db.js';
 
 export const SubspaceModel = {
   async create(subspaceData) {
@@ -18,9 +18,9 @@ export const SubspaceModel = {
       RETURNING *`,
       [
         name,
-        description,
-        content_html,
-        image_url,
+        description || '',
+        content_html || '',
+        image_url || null,
         is_published !== undefined ? is_published : true
       ]
     );
@@ -39,6 +39,12 @@ export const SubspaceModel = {
       paramIndex++;
     }
 
+    if (filters.search) {
+      query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+      params.push(`%${filters.search}%`);
+      paramIndex++;
+    }
+
     query += ' ORDER BY created_at DESC';
 
     const result = await pool.query(query, params);
@@ -54,16 +60,31 @@ export const SubspaceModel = {
     return result.rows[0];
   },
 
+  async findByName(name) {
+    const result = await pool.query(
+      'SELECT * FROM subspaces WHERE name = $1',
+      [name]
+    );
+
+    return result.rows[0];
+  },
+
   async update(id, subspaceData) {
     const fields = [];
     const values = [];
     let paramIndex = 1;
 
     Object.keys(subspaceData).forEach(key => {
-      fields.push(`${key} = $${paramIndex}`);
-      values.push(subspaceData[key]);
-      paramIndex++;
+      if (key !== 'id') {
+        fields.push(`${key} = $${paramIndex}`);
+        values.push(subspaceData[key]);
+        paramIndex++;
+      }
     });
+
+    if (fields.length === 0) {
+      return await this.findById(id);
+    }
 
     fields.push(`updated_at = NOW()`);
     values.push(id);

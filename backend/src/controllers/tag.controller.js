@@ -8,16 +8,7 @@ export const TagController = {
       if (!name) {
         return res.status(400).json({
           success: false,
-          message: 'Tag name is required'
-        });
-      }
-
-      const existingTag = await TagModel.findByName(name);
-      if (existingTag) {
-        return res.status(200).json({
-          success: true,
-          message: 'Tag already exists',
-          data: existingTag
+          message: 'Name is required'
         });
       }
 
@@ -64,6 +55,7 @@ export const TagController = {
   async getTagById(req, res) {
     try {
       const { id } = req.params;
+
       const tag = await TagModel.findById(id);
 
       if (!tag) {
@@ -90,9 +82,23 @@ export const TagController = {
   async updateTag(req, res) {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const { name } = req.body;
 
-      const tag = await TagModel.update(id, updateData);
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Name is required'
+        });
+      }
+
+      const tag = await TagModel.update(id, { name });
+
+      if (!tag) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tag not found'
+        });
+      }
 
       res.status(200).json({
         success: true,

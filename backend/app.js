@@ -1,20 +1,14 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 import blogRoutes from './src/routes/blog.routes.js';
 import categoryRoutes from './src/routes/category.routes.js';
 import tagRoutes from './src/routes/tag.routes.js';
-import subspaceRoutes from './src/routes/subspace.routes.js';
 import placeRoutes from './src/routes/place.routes.js';
+import subspaceRoutes from './src/routes/subspace.routes.js';
 import uploadRoutes from './src/routes/upload.routes.js';
-
-import { errorHandler } from './src/middleware/error.middleware.js';
-import logger from './src/utils/logger.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,26 +20,51 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get('/health', (req, res) => {
+app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'FUSION Backend is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    message: 'FUSION Backend API is running',
+    version: '1.0.0',
+    endpoints: {
+      blogs: '/api/blogs',
+      categories: '/api/categories',
+      tags: '/api/tags',
+      places: '/api/places',
+      subspaces: '/api/subspaces',
+      upload: '/api/upload'
+    }
   });
 });
 
 app.use('/api/blogs', blogRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/tags', tagRoutes);
-app.use('/api/subspaces', subspaceRoutes);
 app.use('/api/places', placeRoutes);
+app.use('/api/subspaces', subspaceRoutes);
 app.use('/api/upload', uploadRoutes);
+
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+
+  if (err.name === 'MulterError') {
+    return res.status(400).json({
+      success: false,
+      message: 'File upload error',
+      error: err.message
+    });
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 app.use((req, res) => {
   res.status(404).json({
@@ -53,7 +72,5 @@ app.use((req, res) => {
     message: 'Route not found'
   });
 });
-
-app.use(errorHandler);
 
 export default app;

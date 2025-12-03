@@ -3,43 +3,14 @@ import { CategoryModel } from '../models/category.model.js';
 export const CategoryController = {
   async createCategory(req, res) {
     try {
-      const { type, name, description, image_url, link_url, link_icon_url, is_published } = req.body;
+      const categoryData = req.body;
 
-      if (!type || !name) {
+      if (!categoryData.name) {
         return res.status(400).json({
           success: false,
-          message: 'Type and name are required'
+          message: 'Name is required'
         });
       }
-
-      if (type === 'Category') {
-        if (!description) {
-          return res.status(400).json({
-            success: false,
-            message: 'Description is required for Category type'
-          });
-        }
-      }
-
-      if (type === 'Link') {
-        if (!link_url) {
-          return res.status(400).json({
-            success: false,
-            message: 'Link URL is required for Link type'
-          });
-        }
-      }
-
-      const categoryData = {
-        type,
-        name,
-        description: type === 'Category' ? description : null,
-        image_url: type === 'Category' ? image_url : null,
-        link_url: type === 'Link' ? link_url : null,
-        link_icon_url: type === 'Link' ? link_icon_url : null,
-        is_published: is_published !== undefined ? is_published : true,
-        created_by: req.user?.id || null
-      };
 
       const category = await CategoryModel.create(categoryData);
 
@@ -60,11 +31,12 @@ export const CategoryController = {
 
   async getAllCategories(req, res) {
     try {
-      const { type, parent_category } = req.query;
+      const { type, parent_category, is_published } = req.query;
 
       const filters = {};
       if (type) filters.type = type;
-      if (parent_category) filters.parent_category = parent_category;
+      if (parent_category !== undefined) filters.parent_category = parent_category === 'null' ? null : parseInt(parent_category);
+      if (is_published !== undefined) filters.is_published = is_published === 'true';
 
       const categories = await CategoryModel.findAll(filters);
 
@@ -85,6 +57,7 @@ export const CategoryController = {
   async getCategoryById(req, res) {
     try {
       const { id } = req.params;
+
       const category = await CategoryModel.findById(id);
 
       if (!category) {
@@ -114,6 +87,13 @@ export const CategoryController = {
       const updateData = req.body;
 
       const category = await CategoryModel.update(id, updateData);
+
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found'
+        });
+      }
 
       res.status(200).json({
         success: true,

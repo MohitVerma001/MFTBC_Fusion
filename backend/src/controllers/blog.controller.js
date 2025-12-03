@@ -7,26 +7,44 @@ export const BlogController = {
       const {
         title,
         content,
+        contentHtml,
+        content_html,
+        publishTo,
         publish_to,
+        categoryId,
         category_id,
+        spaceId,
         space_id,
+        placeId,
         place_id,
+        restrictedComments,
         restricted_comments,
+        isPlaceBlog,
         is_place_blog,
+        authorId,
         author_id,
+        tagIds,
         tag_ids,
+        tags,
+        imageUrls,
         image_urls,
+        images,
         attachments
       } = req.body;
 
-      if (!title || !content || !publish_to) {
+      const finalPublishTo = publishTo || publish_to;
+      const finalTitle = title;
+      const finalContent = content;
+      const finalContentHtml = contentHtml || content_html || content;
+
+      if (!finalTitle || !finalContent || !finalPublishTo) {
         return res.status(400).json({
           success: false,
-          message: 'Title, content, and publish_to are required'
+          message: 'Title, content, and publishTo are required'
         });
       }
 
-      if (publish_to === 'HR' && !category_id) {
+      if (finalPublishTo === 'HR' && !(categoryId || category_id)) {
         return res.status(400).json({
           success: false,
           message: 'Category is required when publishing to HR'
@@ -34,36 +52,45 @@ export const BlogController = {
       }
 
       const blogData = {
-        title,
-        content,
-        content_html: content,
-        publish_to,
-        category_id: publish_to === 'HR' ? category_id : null,
-        space_id: space_id || null,
-        place_id: place_id || null,
-        restricted_comments: restricted_comments || false,
-        is_place_blog: is_place_blog || false,
-        author_id: author_id || null,
+        title: finalTitle,
+        content: finalContent,
+        content_html: finalContentHtml,
+        publish_to: finalPublishTo,
+        category_id: (categoryId || category_id) || null,
+        space_id: (spaceId || space_id) || null,
+        place_id: (placeId || place_id) || null,
+        restricted_comments: (restrictedComments || restricted_comments) || false,
+        is_place_blog: (isPlaceBlog || is_place_blog) || false,
+        author_id: (authorId || author_id) || 1,
         status: 'published',
-        published_at: new Date().toISOString()
+        published_at: new Date()
       };
 
       const blog = await BlogModel.create(blogData);
 
-      if (tag_ids && tag_ids.length > 0) {
-        await BlogModel.addTags(blog.id, tag_ids);
+      const finalTagIds = tagIds || tag_ids || [];
+      if (tags && Array.isArray(tags)) {
+        for (const tagName of tags) {
+          const tag = await TagModel.findOrCreate(tagName);
+          finalTagIds.push(tag.id);
+        }
       }
 
-      if (image_urls && image_urls.length > 0) {
-        await BlogModel.addImages(blog.id, image_urls);
+      if (finalTagIds && finalTagIds.length > 0) {
+        await BlogModel.addTags(blog.id, finalTagIds);
+      }
+
+      const finalImageUrls = imageUrls || image_urls || images || [];
+      if (finalImageUrls && finalImageUrls.length > 0) {
+        await BlogModel.addImages(blog.id, finalImageUrls);
       }
 
       if (attachments && attachments.length > 0) {
         await BlogModel.addAttachments(blog.id, attachments);
       }
 
-      const tags = tag_ids ? await BlogModel.getTags(blog.id) : [];
-      const images = image_urls ? await BlogModel.getImages(blog.id) : [];
+      const blogTags = finalTagIds.length > 0 ? await BlogModel.getTags(blog.id) : [];
+      const blogImages = finalImageUrls.length > 0 ? await BlogModel.getImages(blog.id) : [];
       const blogAttachments = attachments ? await BlogModel.getAttachments(blog.id) : [];
 
       res.status(201).json({
@@ -71,8 +98,8 @@ export const BlogController = {
         message: 'Blog created successfully',
         data: {
           ...blog,
-          tags,
-          images,
+          tags: blogTags,
+          images: blogImages,
           attachments: blogAttachments
         }
       });
@@ -88,13 +115,28 @@ export const BlogController = {
 
   async getAllBlogs(req, res) {
     try {
-      const { publish_to, category_id, space_id, is_published } = req.query;
+      const {
+        publishTo,
+        publish_to,
+        categoryId,
+        category_id,
+        spaceId,
+        space_id,
+        placeId,
+        place_id,
+        search,
+        limit,
+        status
+      } = req.query;
 
       const filters = {};
-      if (publish_to) filters.publish_to = publish_to;
-      if (category_id) filters.category_id = category_id;
-      if (space_id) filters.space_id = space_id;
-      if (is_published !== undefined) filters.is_published = is_published === 'true';
+      if (publishTo || publish_to) filters.publishTo = publishTo || publish_to;
+      if (categoryId || category_id) filters.categoryId = categoryId || category_id;
+      if (spaceId || space_id) filters.space_id = spaceId || space_id;
+      if (placeId || place_id) filters.placeId = placeId || place_id;
+      if (search) filters.search = search;
+      if (limit) filters.limit = parseInt(limit);
+      if (status) filters.status = status;
 
       const blogs = await BlogModel.findAll(filters);
 
@@ -166,20 +208,46 @@ export const BlogController = {
   async updateBlog(req, res) {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const updateData = { ...req.body };
 
-      if (updateData.publish_to === 'HR' && !updateData.category_id) {
+      const finalPublishTo = updateData.publishTo || updateData.publish_to;
+      if (finalPublishTo) {
+        updateData.publish_to = finalPublishTo;
+        delete updateData.publishTo;
+      }
+
+      const finalCategoryId = updateData.categoryId || updateData.category_id;
+      if (finalPublishTo === 'HR' && !finalCategoryId) {
         return res.status(400).json({
           success: false,
           message: 'Category is required when publishing to HR'
         });
       }
 
-      if (updateData.publish_to && updateData.publish_to !== 'HR') {
+      if (finalPublishTo && finalPublishTo !== 'HR') {
         updateData.category_id = null;
+      } else if (finalCategoryId) {
+        updateData.category_id = finalCategoryId;
+      }
+
+      if (updateData.categoryId) delete updateData.categoryId;
+      if (updateData.placeId) {
+        updateData.place_id = updateData.placeId;
+        delete updateData.placeId;
+      }
+      if (updateData.spaceId) {
+        updateData.space_id = updateData.spaceId;
+        delete updateData.spaceId;
       }
 
       const blog = await BlogModel.update(id, updateData);
+
+      if (!blog) {
+        return res.status(404).json({
+          success: false,
+          message: 'Blog not found'
+        });
+      }
 
       res.status(200).json({
         success: true,
