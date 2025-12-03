@@ -1,4 +1,5 @@
 import React from "react";
+import ImageLoader from "../ImageLoader/ImageLoader";
 import "./Footer.css";
 
 const Footer = () => {
@@ -61,7 +62,7 @@ const Footer = () => {
         <div className="row pt-4">
           <div className="col-12 col-lg-6 mb-3 mb-lg-0">
             <div className="d-flex align-items-center footer-brand">
-              <img className="footer-logo" alt="Company Logo" src="/div-6.svg" />
+              <ImageLoader className="footer-logo" alt="Company Logo" src="/div-6.svg" />
               <div className="footer-divider"></div>
               <span className="footer-company-name">
                 Mitsubishi FUSO Truck and Bus Corporation

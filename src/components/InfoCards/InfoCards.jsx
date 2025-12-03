@@ -1,4 +1,5 @@
 import React from "react";
+import ImageLoader from "../ImageLoader/ImageLoader";
 import "./InfoCards.css";
 
 const InfoCards = () => {
@@ -59,7 +60,7 @@ const InfoCards = () => {
               <div className="info-card-content">
                 {hrQuickLinks.map((link, index) => (
                   <button key={index} className="link-item">
-                    <img src={link.icon} alt="" className="link-icon" />
+                    <ImageLoader src={link.icon} alt="" className="link-icon" />
                     <span className="link-label">{link.label}</span>
                   </button>
                 ))}
@@ -74,7 +75,7 @@ const InfoCards = () => {
               <div className="info-card-content">
                 {itDigitalization.map((item, index) => (
                   <button key={index} className="link-item">
-                    <img src={item.icon} alt="" className="link-icon" />
+                    <ImageLoader src={item.icon} alt="" className="link-icon" />
                     <div className="link-text">
                       <div className="link-title">{item.title}</div>
                       <div className="link-description">{item.description}</div>
