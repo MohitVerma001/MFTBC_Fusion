@@ -1,9 +1,11 @@
 import React from "react";
 import "./FormFields.css";
 
-const FileUpload = ({ label, files, onFilesChange, accept = "*" }) => {
+const FileUpload = ({ label, files = [], onFilesChange, accept = "*" }) => {
+
   const handleFileUpload = (e) => {
-    const uploadedFiles = Array.from(e.target.files);
+    const uploadedFiles = Array.from(e.target.files || []);
+
     const newFiles = uploadedFiles.map((file) => ({
       id: Date.now() + Math.random(),
       name: file.name,
@@ -11,16 +13,17 @@ const FileUpload = ({ label, files, onFilesChange, accept = "*" }) => {
       file: file,
     }));
 
-    onFilesChange([...files, ...newFiles]);
+    onFilesChange([...(files ?? []), ...newFiles]);
   };
 
   const handleRemoveFile = (fileId) => {
-    onFilesChange(files.filter((file) => file.id !== fileId));
+    onFilesChange((files ?? []).filter((file) => file.id !== fileId));
   };
 
   return (
     <div className="mb-3">
       <label className="form-label">{label}</label>
+
       <div className="file-upload-area">
         <input
           type="file"
@@ -30,6 +33,7 @@ const FileUpload = ({ label, files, onFilesChange, accept = "*" }) => {
           multiple
           onChange={handleFileUpload}
         />
+
         <label htmlFor="fileUpload" className="btn btn-outline-primary">
           <svg className="me-2" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -43,9 +47,9 @@ const FileUpload = ({ label, files, onFilesChange, accept = "*" }) => {
         </label>
       </div>
 
-      {files.length > 0 && (
+      {(files?.length ?? 0) > 0 && (
         <div className="uploaded-files-list mt-3">
-          {files.map((file) => (
+          {(files ?? []).map((file) => (
             <div key={file.id} className="uploaded-file-item">
               <div className="file-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -65,10 +69,12 @@ const FileUpload = ({ label, files, onFilesChange, accept = "*" }) => {
                   />
                 </svg>
               </div>
+
               <div className="file-info">
                 <span className="file-name">{file.name}</span>
                 <span className="file-size">{file.size}</span>
               </div>
+
               <button
                 type="button"
                 className="btn btn-sm btn-danger remove-btn"
