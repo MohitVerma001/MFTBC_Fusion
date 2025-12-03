@@ -1,10 +1,10 @@
-import { supabase } from '../config/database.js';
+import { supabase } from '../../database.js';
 
-export const CategoryModel = {
-  async create(categoryData) {
+export const SubspaceModel = {
+  async create(subspaceData) {
     const { data, error } = await supabase
-      .from('categories')
-      .insert([categoryData])
+      .from('subspaces')
+      .insert([subspaceData])
       .select()
       .single();
 
@@ -14,17 +14,12 @@ export const CategoryModel = {
 
   async findAll(filters = {}) {
     let query = supabase
-      .from('categories')
+      .from('subspaces')
       .select('*')
-      .eq('is_published', true)
       .order('created_at', { ascending: false });
 
-    if (filters.type) {
-      query = query.eq('type', filters.type);
-    }
-
-    if (filters.parent_category) {
-      query = query.eq('parent_category', filters.parent_category);
+    if (filters.is_published !== undefined) {
+      query = query.eq('is_published', filters.is_published);
     }
 
     const { data, error } = await query;
@@ -35,7 +30,7 @@ export const CategoryModel = {
 
   async findById(id) {
     const { data, error } = await supabase
-      .from('categories')
+      .from('subspaces')
       .select('*')
       .eq('id', id)
       .single();
@@ -44,10 +39,10 @@ export const CategoryModel = {
     return data;
   },
 
-  async update(id, categoryData) {
+  async update(id, subspaceData) {
     const { data, error } = await supabase
-      .from('categories')
-      .update({ ...categoryData, updated_at: new Date().toISOString() })
+      .from('subspaces')
+      .update({ ...subspaceData, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -58,7 +53,7 @@ export const CategoryModel = {
 
   async delete(id) {
     const { error } = await supabase
-      .from('categories')
+      .from('subspaces')
       .delete()
       .eq('id', id);
 
@@ -67,4 +62,4 @@ export const CategoryModel = {
   }
 };
 
-export default CategoryModel;
+export default SubspaceModel;
