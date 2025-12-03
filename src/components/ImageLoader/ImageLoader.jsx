@@ -16,17 +16,30 @@ const ImageLoader = ({ src, alt = "", className = "", style = {}, onClick, ...re
         setLoading(true);
         setError(false);
 
-        const response = await fetch(src);
-        const text = await response.text();
-
-        if (text.startsWith("http")) {
-          setImageSrc(text.trim());
-        } else {
+        if (src.startsWith("http")) {
           setImageSrc(src);
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(src);
+
+        const contentType = response.headers.get("content-type");
+
+        if (contentType && (contentType.includes("image") || contentType.includes("svg"))) {
+          setImageSrc(src);
+        } else {
+          const text = await response.text();
+
+          if (text.trim().startsWith("http")) {
+            setImageSrc(text.trim());
+          } else {
+            setImageSrc(src);
+          }
         }
       } catch (err) {
         console.error("Error loading image:", err);
-        setError(true);
+        setImageSrc(src);
       } finally {
         setLoading(false);
       }
