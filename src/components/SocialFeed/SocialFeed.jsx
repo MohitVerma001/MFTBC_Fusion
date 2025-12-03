@@ -1,4 +1,5 @@
 import React from "react";
+import ImageLoader from "../ImageLoader/ImageLoader";
 import "./SocialFeed.css";
 
 const SocialFeed = () => {
@@ -51,7 +52,7 @@ const SocialFeed = () => {
                     <div className="post-author-role">{post.role}</div>
                   </div>
                   <button className="post-menu-btn">
-                    <img src="/button-422.svg" alt="More options" />
+                    <ImageLoader src="/button-422.svg" alt="More options" />
                   </button>
                 </div>
 
@@ -61,22 +62,22 @@ const SocialFeed = () => {
                 {/* Post Image */}
                 {post.image && (
                   <div className="post-image">
-                    <img src={post.image} alt="" />
+                    <ImageLoader src={post.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
                 )}
 
                 {/* Post Actions */}
                 <div className="post-actions">
                   <button className="action-btn">
-                    <img src="/i-389.svg" alt="Like" className="action-icon" />
+                    <ImageLoader src="/i-389.svg" alt="Like" className="action-icon" />
                     <span>{post.likes}</span>
                   </button>
                   <button className="action-btn">
-                    <img src="/i-436.svg" alt="Comment" className="action-icon" />
+                    <ImageLoader src="/i-436.svg" alt="Comment" className="action-icon" />
                     <span>{post.comments}</span>
                   </button>
                   <button className="action-btn">
-                    <img src="/i-442.svg" alt="Share" className="action-icon" />
+                    <ImageLoader src="/i-442.svg" alt="Share" className="action-icon" />
                     <span>Share</span>
                   </button>
                 </div>

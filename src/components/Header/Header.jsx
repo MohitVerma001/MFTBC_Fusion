@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import CreatePanel from "../CreatePanel/CreatePanel";
+import ImageLoader from "../ImageLoader/ImageLoader";
 import "./Header.css";
 
 const Header = () => {
@@ -26,13 +27,13 @@ const Header = () => {
           <div className="row align-items-center">
             <div className="col-auto">
               <Link to="/">
-                <img className="header-logo" alt="Logo" src="/div-6.svg" />
+                <ImageLoader className="header-logo" alt="Logo" src="/div-6.svg" />
               </Link>
             </div>
 
             <div className="col d-flex justify-content-end align-items-center">
               <div className="d-flex align-items-center gap-3">
-                <img className="header-icon" alt="Notification" src="/div-23.svg" />
+                <ImageLoader className="header-icon" alt="Notification" src="/div-23.svg" />
 
                 <div className="language-toggle">
                   {languages.map((lang, index) => (
@@ -46,11 +47,12 @@ const Header = () => {
                 </div>
 
                 <div className="d-flex align-items-center gap-2">
-                  <img className="header-icon" alt="Menu" src="/div-11.svg" />
-                  <img
+                  <ImageLoader className="header-icon" alt="Menu" src="/div-11.svg" />
+                  <ImageLoader
                     className="header-icon header-icon-clickable"
                     alt="Create"
                     src="/button-20.svg"
+                    style={{ cursor: "pointer" }}
                     onClick={handleCreateClick}
                   />
 

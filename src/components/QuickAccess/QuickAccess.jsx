@@ -1,4 +1,5 @@
 import React from "react";
+import ImageLoader from "../ImageLoader/ImageLoader";
 import "./QuickAccess.css";
 
 const QuickAccess = () => {
@@ -36,7 +37,7 @@ const QuickAccess = () => {
           {quickAccessData.map((item, index) => (
             <div key={index} className="col-12 col-md-6 col-lg-4">
               <div className={`quick-access-card ${item.bgColor}`}>
-                <img src={item.icon} alt="" className="qa-icon" />
+                <ImageLoader src={item.icon} alt="" className="qa-icon" />
                 <h3 className="qa-title">{item.title}</h3>
                 <p className="qa-description">{item.description}</p>
               </div>
