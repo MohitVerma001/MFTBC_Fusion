@@ -30,13 +30,31 @@ const CreateCategory = () => {
     { value: 'Link', label: 'Link' }
   ];
 
-  const handleChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+  const handleChange = (nameOrEvent, value) => {
+    let fieldName, fieldValue;
+
+    if (typeof nameOrEvent === 'string') {
+      fieldName = nameOrEvent;
+      fieldValue = value;
+    } else {
+      const event = nameOrEvent;
+      fieldName = event.target.name;
+      fieldValue = event.target.value;
+    }
+
+    console.log('Form field changed:', fieldName, '=', fieldValue);
+
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [fieldName]: fieldValue
+      };
+      console.log('Updated form data:', newData);
+      return newData;
+    });
+
+    if (errors[fieldName]) {
+      setErrors(prev => ({ ...prev, [fieldName]: '' }));
     }
   };
 
@@ -77,14 +95,24 @@ const CreateCategory = () => {
     setIsSubmitting(true);
 
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL || 'http://localhost:5000'}/api/categories`;
+      const apiUrl = `http://localhost:5000/api/categories`;
+
+      const dataToSubmit = {
+        type: formData.type,
+        name: formData.name,
+        description: formData.type === 'Category' ? formData.description : null,
+        image_url: formData.type === 'Category' ? formData.image_url : null,
+        link_url: formData.type === 'Link' ? formData.link_url : null,
+        link_icon_url: formData.type === 'Link' ? formData.link_icon_url : null,
+        is_published: formData.is_published
+      };
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSubmit)
       });
 
       const result = await response.json();
@@ -134,10 +162,16 @@ const CreateCategory = () => {
             error={errors.type}
             required
           />
+
+          {formData.type && (
+            <div className="alert alert-info mt-3 animate__animated animate__fadeIn">
+              Selected Type: <strong>{formData.type}</strong>
+            </div>
+          )}
         </FormSection>
 
         {formData.type === 'Category' && (
-          <div className="animate__animated animate__fadeIn">
+          <div className="animate__animated animate__fadeIn form-section-card">
             <FormSection title="Category Information">
               <TextField
                 label="Category Name"
@@ -168,7 +202,7 @@ const CreateCategory = () => {
                 error={errors.image_url}
               />
 
-              <div className="form-check form-switch mt-3">
+              <div className="form-check form-switch mt-4">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -185,7 +219,7 @@ const CreateCategory = () => {
         )}
 
         {formData.type === 'Link' && (
-          <div className="animate__animated animate__fadeIn">
+          <div className="animate__animated animate__fadeIn form-section-card">
             <FormSection title="Link Information">
               <TextField
                 label="Link Name"
@@ -215,7 +249,7 @@ const CreateCategory = () => {
                 error={errors.link_icon_url}
               />
 
-              <div className="form-check form-switch mt-3">
+              <div className="form-check form-switch mt-4">
                 <input
                   className="form-check-input"
                   type="checkbox"
