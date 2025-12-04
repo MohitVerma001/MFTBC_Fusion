@@ -6,6 +6,7 @@ import NavigationTabs from "./components/NavigationTabs/NavigationTabs";
 import Footer from "./components/Footer/Footer";
 import Home from "./pages/Home/Home";
 import News from "./pages/News/News";
+import NewsDetail from "./pages/NewsDetail/NewsDetail";
 import HR from "./pages/HR/HR";
 import Content from "./pages/Content/Content";
 import CreateBlog from "./pages/CreateBlog/CreateBlog";
@@ -23,6 +24,8 @@ const App = () => {
   const location = useLocation();
 
   const isCreatePage = location.pathname.startsWith("/create");
+  const isDetailPage = location.pathname.match(/^\/news\/\d+$/);
+  const hideHeaderFooter = isCreatePage || isDetailPage;
 
   const getHeroConfig = () => {
     switch (location.pathname) {
@@ -105,7 +108,7 @@ const App = () => {
 
   return (
     <main className="app-container">
-      {!isCreatePage && (
+      {!hideHeaderFooter && (
         <>
           <Header />
           <HeroSection
@@ -119,6 +122,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/news" element={<News />} />
+        <Route path="/news/:id" element={<NewsDetail />} />
         <Route path="/hr" element={<HR />} />
         <Route path="/it" element={<div className="container py-5"><h2>IT Page - Coming Soon</h2></div>} />
         <Route path="/cross-functions" element={<div className="container py-5"><h2>Cross Functions Page - Coming Soon</h2></div>} />
@@ -138,7 +142,7 @@ const App = () => {
         <Route path="/create/category" element={<CreateCategory />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {!isCreatePage && <Footer />}
+      {!hideHeaderFooter && <Footer />}
     </main>
   );
 };

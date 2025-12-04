@@ -1,5 +1,18 @@
 import pool from '../utils/db.js';
 
+const getBaseUrl = () => {
+  return process.env.BASE_URL || 'http://localhost:5000';
+};
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const baseUrl = getBaseUrl();
+  return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
+};
+
 export const BlogModel = {
 
   async create(blogData) {
@@ -225,6 +238,27 @@ export const BlogModel = {
   },
 
   async getAuthor(authorId) {
+    const result = await pool.query(
+      `SELECT id, display_name, email, first_name, last_name, department, job_title, avatar_url
+       FROM users WHERE id = $1`,
+      [authorId]
+    );
+
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      return {
+        id: String(user.id),
+        displayName: user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User',
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        department: user.department,
+        jobTitle: user.job_title,
+        avatarUrl: user.avatar_url,
+        type: "person"
+      };
+    }
+
     return {
       id: String(authorId),
       displayName: "User",
@@ -235,7 +269,7 @@ export const BlogModel = {
   transformToJiveFormat(blog, tags, images, attachments, author, place) {
     const contentImages = images.map(img => ({
       id: String(img.id),
-      ref: img.image_url,
+      ref: toAbsoluteUrl(img.image_url),
       name: img.image_url.split("/").pop()
     }));
 
@@ -253,7 +287,7 @@ export const BlogModel = {
       attachments: attachments.map(a => ({
         id: String(a.id),
         name: a.file_name,
-        url: a.file_url,
+        url: toAbsoluteUrl(a.file_url),
         size: a.file_size,
         contentType: a.mime_type
       })),

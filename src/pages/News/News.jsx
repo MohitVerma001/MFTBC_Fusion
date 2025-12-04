@@ -160,7 +160,7 @@ const News = () => {
               <div className="row g-4">
                 {articles.map((article) => {
                   const bannerImage = article.contentImages?.length
-                    ? `${baseURL}${article.contentImages[0].ref}`
+                    ? article.contentImages[0].ref
                     : "/placeholder-news.png";
 
                   return (
