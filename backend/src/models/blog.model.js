@@ -45,92 +45,101 @@ export const BlogModel = {
   },
 
   async findAll(filters = {}) {
-    let query = `
-      SELECT b.*,
-             COALESCE(json_build_object('id', p.id, 'name', p.name), null) AS place,
-             (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likeCount
-      FROM blogs b
-      LEFT JOIN places p ON b.place_id = p.id
-      WHERE 1=1
-    `;
     const params = [];
-    let i = 1;
+  let where = "WHERE 1=1";
+  let i = 1;
 
-    if (filters.publishTo) {
-      query += ` AND b.publish_to = $${i}`;
-      params.push(filters.publishTo);
-      i++;
-    }
+  // ----- APPLY FILTERS -----
+  if (filters.publishTo) {
+    where += ` AND b.publish_to = $${i}`;
+    params.push(filters.publishTo);
+    i++;
+  }
 
-    if (filters.categoryId) {
-      query += ` AND b.category_id = $${i}`;
-      params.push(filters.categoryId);
-      i++;
-    }
+  if (filters.categoryId) {
+    where += ` AND b.category_id = $${i}`;
+    params.push(filters.categoryId);
+    i++;
+  }
 
-    if (filters.placeId) {
-      query += ` AND b.place_id = $${i}`;
-      params.push(filters.placeId);
-      i++;
-    }
+  if (filters.placeId) {
+    where += ` AND b.place_id = $${i}`;
+    params.push(filters.placeId);
+    i++;
+  }
 
-    if (filters.authorId) {
-      query += ` AND b.author_id = $${i}`;
-      params.push(filters.authorId);
-      i++;
-    }
+  if (filters.authorId) {
+    where += ` AND b.author_id = $${i}`;
+    params.push(filters.authorId);
+    i++;
+  }
 
-    if (filters.search) {
-      query += ` AND (b.title ILIKE $${i} OR b.content ILIKE $${i})`;
-      params.push(`%${filters.search}%`);
-      i++;
-    }
+  if (filters.search) {
+    where += ` AND (b.title ILIKE $${i} OR b.content ILIKE $${i})`;
+    params.push(`%${filters.search}%`);
+    i++;
+  }
 
-    if (filters.tags) {
-      query += ` AND EXISTS (
-        SELECT 1 FROM blog_tags bt
-        INNER JOIN tags t ON bt.tag_id = t.id
-        WHERE bt.blog_id = b.id AND t.name = $${i}
-      )`;
-      params.push(filters.tags);
-      i++;
-    }
+  if (filters.tags) {
+    where += ` AND EXISTS (
+      SELECT 1 FROM blog_tags bt
+      JOIN tags t ON bt.tag_id = t.id
+      WHERE bt.blog_id = b.id AND t.name = $${i}
+    )`;
+    params.push(filters.tags);
+    i++;
+  }
 
-    if (filters.from) {
-      query += ` AND b.published_at >= $${i}`;
-      params.push(filters.from);
-      i++;
-    }
+  if (filters.from) {
+    where += ` AND b.published_at >= $${i}`;
+    params.push(filters.from);
+    i++;
+  }
 
-    if (filters.to) {
-      query += ` AND b.published_at <= $${i}`;
-      params.push(filters.to);
-      i++;
-    }
+  if (filters.to) {
+    where += ` AND b.published_at <= $${i}`;
+    params.push(filters.to);
+    i++;
+  }
 
-    query += ` ORDER BY b.created_at DESC`;
+  // ----- PAGINATION -----
+  const limit = filters.limit ? parseInt(filters.limit) : 9;
+  const page = filters.page ? parseInt(filters.page) : 1;
+  const offset = (page - 1) * limit;
 
-    const limit = filters.limit ? parseInt(filters.limit) : 9;
-    const page = filters.page ? parseInt(filters.page) : 1;
-    const offset = (page - 1) * limit;
+  // ----- COUNT QUERY (safe) -----
+  const countSQL = `
+    SELECT COUNT(*) AS total
+    FROM blogs b
+    ${where}
+  `;
 
-    const countQuery = query.replace(/SELECT b\.\*.*?FROM blogs b/s, 'SELECT COUNT(*) FROM blogs b');
-    const countResult = await pool.query(countQuery, params);
-    const totalItems = parseInt(countResult.rows[0].count);
-    const totalPages = Math.ceil(totalItems / limit);
+  const countResult = await pool.query(countSQL, params);
+  const totalItems = parseInt(countResult.rows[0].total);
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
-    query += ` LIMIT $${i} OFFSET $${i + 1}`;
-    params.push(limit, offset);
+  // ----- MAIN QUERY -----
+  const dataSQL = `
+    SELECT 
+      b.*,
+      (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS "likeCount",
+      COALESCE(json_build_object('id', p.id, 'name', p.name), null) AS place
+    FROM blogs b
+    LEFT JOIN places p ON b.place_id = p.id
+    ${where}
+    ORDER BY b.created_at DESC
+    LIMIT $${i} OFFSET $${i + 1}
+  `;
 
-    const result = await pool.query(query, params);
+  const dataResult = await pool.query(dataSQL, [...params, limit, offset]);
 
-    return {
-      items: result.rows,
-      totalPages,
-      currentPage: page,
-      totalItems,
-      itemsPerPage: limit
-    };
+  return {
+    items: dataResult.rows,
+    totalPages,
+    currentPage: page,
+    totalItems,
+    itemsPerPage: limit
+  };
   },
 
   async findById(id) {

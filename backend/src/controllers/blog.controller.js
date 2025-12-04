@@ -119,90 +119,93 @@ export const BlogController = {
   // -----------------------------------
   // GET ALL BLOGS
   // -----------------------------------
-  async getAllBlogs(req, res) {
-    try {
-      const {
-        publish_to,
-        publishTo,
-        categoryId,
-        placeId,
-        authorId,
-        search,
-        tags,
-        from,
-        to,
-        limit,
-        page,
-        status,
-        jiveFormat
-      } = req.query;
+async getAllBlogs(req, res) {
+  try {
+    const {
+      publish_to,
+      publishTo,
+      categoryId,
+      placeId,
+      authorId,
+      search,
+      tags,
+      from,
+      to,
+      limit,
+      page,
+      status,
+      jiveFormat
+    } = req.query;
 
-      const filters = {
-        publishTo: publishTo || publish_to,
-        categoryId,
-        placeId,
-        authorId,
-        search,
-        tags,
-        from,
-        to,
-        limit,
-        page,
-        status
-      };
+    const filters = {
+      publishTo: publishTo || publish_to || req.query.publishTo,
+      categoryId,
+      placeId,
+      authorId,
+      search,
+      tags,
+      from,
+      to,
+      limit,
+      page,
+      status
+    };
 
-      const result = await BlogModel.findAll(filters);
+    const result = await BlogModel.findAll(filters);
 
-      const formatted = await Promise.all(
-        result.items.map(async (blog) => {
-          const tags = await BlogModel.getTags(blog.id);
-          const images = await BlogModel.getImages(blog.id);
-          const attachments = await BlogModel.getAttachments(blog.id);
-          const author = await BlogModel.getAuthor(blog.author_id);
+    const formatted = await Promise.all(
+      result.items.map(async (blog) => {
+        const tags = await BlogModel.getTags(blog.id);
+        const images = await BlogModel.getImages(blog.id);
+        const attachments = await BlogModel.getAttachments(blog.id);
+        const author = await BlogModel.getAuthor(blog.author_id);
 
-          if (jiveFormat === "true") {
-            return BlogModel.transformToJiveFormat(
-              blog,
-              tags,
-              images,
-              attachments,
-              author,
-              blog.place
-            );
-          }
-
-          return { ...blog, tags, images, attachments };
-        })
-      );
-
-      if (jiveFormat === "true") {
-        return res.json({
-          items: formatted,
-          totalPages: result.totalPages,
-          currentPage: result.currentPage,
-          totalItems: result.totalItems
-        });
-      }
-
-      res.json({
-        success: true,
-        data: formatted,
-        pagination: {
-          totalPages: result.totalPages,
-          currentPage: result.currentPage,
-          totalItems: result.totalItems,
-          itemsPerPage: result.itemsPerPage
+        if (jiveFormat === "true") {
+          return BlogModel.transformToJiveFormat(
+            blog,
+            tags,
+            images,
+            attachments,
+            author,
+            blog.place
+          );
         }
-      });
-    } catch (error) {
-      console.error("Error fetching blogs:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch blogs",
-        error: error.message
+
+        return { ...blog, tags, images, attachments };
+      })
+    );
+
+    // -------- FIXED OUTPUT FOR FRONTEND ----------
+    if (jiveFormat === "true") {
+      return res.json({
+        items: formatted,
+        totalPages: result.totalPages,
+        currentPage: result.currentPage,
+        totalItems: result.totalItems
       });
     }
-  },
+
+    // Default non-Jive format
+    res.json({
+      success: true,
+      data: formatted,
+      pagination: {
+        totalPages: result.totalPages,
+        currentPage: result.currentPage,
+        totalItems: result.totalItems,
+        itemsPerPage: result.itemsPerPage
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching blogs:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch blogs",
+      error: error.message
+    });
+  }
+},
+
 
   // -----------------------------------
   // GET BLOG BY ID
