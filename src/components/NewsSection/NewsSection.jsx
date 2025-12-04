@@ -1,31 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ImageLoader from "../ImageLoader/ImageLoader";
 import "./NewsSection.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const NewsSection = () => {
-  const newsData = [
-    {
-      image: "/img-119.png",
-      title: "FUSO Announces New Sustainability Initiative",
-      description:
-        "Leading the way in green transportation with innovative electric vehicle technology and carbon-neutral manufacturing processes.",
-      time: "2 hours ago",
-    },
-    {
-      image: "/img-132.png",
-      title: "Q4 Town Hall Meeting Highlights and Key Takeaways",
-      description:
-        "CEO shares vision for 2024 growth strategy and celebrates team achievements across all departments and regions.",
-      time: "5 hours ago",
-    },
-    {
-      image: "/img-145.png",
-      title: "New Manufacturing Facility Opens in Southeast Asia",
-      description:
-        "State-of-the-art production plant brings cutting-edge technology and creates hundreds of new employment opportunities.",
-      time: "1 day ago",
-    },
-  ];
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNews = async () => {
+    try {
+      const res = await fetch(
+        `${API_URL}/blogs?publish_to=News&jiveFormat=true`
+      );
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setNews(data);
+      } else {
+        setNews([]);
+      }
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      setNews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  if (loading) {
+    return <div className="container">Loading news...</div>;
+  }
 
   return (
     <section className="news-section">
@@ -35,14 +44,7 @@ const NewsSection = () => {
             <h2 className="section-title">Latest News</h2>
             <button className="view-all-btn">
               View All
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="ms-1"
-              >
+              <svg width="16" height="16" viewBox="0 0 16 16">
                 <path
                   d="M6 12L10 8L6 4"
                   stroke="currentColor"
@@ -56,20 +58,46 @@ const NewsSection = () => {
         </div>
 
         <div className="row g-4">
-          {newsData.map((news, index) => (
-            <div key={index} className="col-12 col-md-6 col-lg-4">
-              <div className="news-card">
-                <div className="news-image">
-                  <ImageLoader src={news.image} alt={news.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                <div className="news-content">
-                  <h3 className="news-title">{news.title}</h3>
-                  <p className="news-description">{news.description}</p>
-                  <p className="news-time">{news.time}</p>
+          {news.map((item) => {
+            const image =
+              item.contentImages?.[0]?.ref || "/placeholder-news.png";
+
+            const description =
+              item.content?.text
+                ?.replace("<body>", "")
+                ?.replace("</body>", "")
+                ?.replace(/<[^>]*>?/gm, "") // remove HTML
+                ?.slice(0, 120) + "...";
+
+            return (
+              <div key={item.id} className="col-12 col-md-6 col-lg-4">
+                <div className="news-card">
+                  <div className="news-image">
+                    <ImageLoader
+                      src={image}
+                      alt={item.subject}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                  <div className="news-content">
+                    <h3 className="news-title">{item.subject}</h3>
+                    <p className="news-description">{description}</p>
+                    <p className="news-time">
+                      {new Date(item.published).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+
+          {news.length === 0 && (
+            <div className="col-12 text-center">No news available.</div>
+          )}
         </div>
       </div>
     </section>
