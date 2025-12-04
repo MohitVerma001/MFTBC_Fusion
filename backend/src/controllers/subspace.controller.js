@@ -12,6 +12,12 @@ export const SubspaceController = {
         });
       }
 
+      // Accept camelCase from frontend and map to DB column
+      if (subspaceData.parentSubspaceId) {
+        subspaceData.parent_subspace_id = subspaceData.parentSubspaceId;
+        delete subspaceData.parentSubspaceId;
+      }
+
       const subspace = await SubspaceModel.create(subspaceData);
 
       res.status(201).json({
@@ -31,11 +37,19 @@ export const SubspaceController = {
 
   async getAllSubspaces(req, res) {
     try {
-      const { is_published, search } = req.query;
+      const { is_published, search, parentSubspaceId, parent_subspace_id } = req.query;
 
       const filters = {};
       if (is_published !== undefined) filters.is_published = is_published === 'true';
       if (search) filters.search = search;
+
+      const parentId = parentSubspaceId || parent_subspace_id;
+      if (parentId !== undefined) {
+        filters.parent_subspace_id = parentId === 'null' ? null : parseInt(parentId, 10);
+      }
+
+      // Always ensure "MFTBC" exists as the default parent space
+      await SubspaceModel.ensureDefaultMFTBC();
 
       const subspaces = await SubspaceModel.findAll(filters);
 
@@ -83,7 +97,12 @@ export const SubspaceController = {
   async updateSubspace(req, res) {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const updateData = { ...req.body };
+
+      if (updateData.parentSubspaceId !== undefined) {
+        updateData.parent_subspace_id = updateData.parentSubspaceId;
+        delete updateData.parentSubspaceId;
+      }
 
       const subspace = await SubspaceModel.update(id, updateData);
 

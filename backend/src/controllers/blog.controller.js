@@ -1,5 +1,6 @@
 import { BlogModel } from "../models/blog.model.js";
 import { TagModel } from "../models/tag.model.js";
+import { SubspaceModel } from "../models/subspace.model.js";
 
 export const BlogController = {
   // -----------------------------------
@@ -19,6 +20,8 @@ export const BlogController = {
         category_id,
         placeId,
         place_id,
+        spaceId,
+        space_id,
         restrictReplies,
         restrictedComments,
         tags,
@@ -51,16 +54,20 @@ export const BlogController = {
         });
       }
 
+      // Resolve space (MFTBC default if none passed)
+      let finalSpaceId = spaceId || space_id;
+      if (!finalSpaceId) {
+        const defaultSpace = await SubspaceModel.ensureDefaultMFTBC();
+        finalSpaceId = defaultSpace.id;
+      }
+
       const blogData = {
         title: finalTitle,
         content: finalContent,
         content_html: finalContentHtml,
         publish_to: finalPublishTo,
         category_id: categoryId || category_id || null,
-
-        // DEFAULT SPACE MFTBC
-        space_id: 6220,
-
+        space_id: finalSpaceId,
         place_id: placeId || place_id || null,
         restricted_comments: restrictReplies || restrictedComments || false,
         is_place_blog: isPlaceBlog || is_place_blog || false,
@@ -119,93 +126,93 @@ export const BlogController = {
   // -----------------------------------
   // GET ALL BLOGS
   // -----------------------------------
-async getAllBlogs(req, res) {
-  try {
-    const {
-      publish_to,
-      publishTo,
-      categoryId,
-      placeId,
-      authorId,
-      search,
-      tags,
-      from,
-      to,
-      limit,
-      page,
-      status,
-      jiveFormat
-    } = req.query;
+  async getAllBlogs(req, res) {
+    try {
+      const {
+        publish_to,
+        publishTo,
+        categoryId,
+        spaceId,
+        space_id,
+        placeId,
+        authorId,
+        search,
+        tags,
+        from,
+        to,
+        limit,
+        page,
+        status,
+        jiveFormat
+      } = req.query;
 
-    const filters = {
-      publishTo: publishTo || publish_to || req.query.publishTo,
-      categoryId,
-      placeId,
-      authorId,
-      search,
-      tags,
-      from,
-      to,
-      limit,
-      page,
-      status
-    };
+      const filters = {
+        publishTo: publishTo || publish_to,
+        categoryId,
+        spaceId: spaceId || space_id,
+        placeId,
+        authorId,
+        search,
+        tags,
+        from,
+        to,
+        limit,
+        page,
+        status
+      };
 
-    const result = await BlogModel.findAll(filters);
+      const result = await BlogModel.findAll(filters);
 
-    const formatted = await Promise.all(
-      result.items.map(async (blog) => {
-        const tags = await BlogModel.getTags(blog.id);
-        const images = await BlogModel.getImages(blog.id);
-        const attachments = await BlogModel.getAttachments(blog.id);
-        const author = await BlogModel.getAuthor(blog.author_id);
+      const formatted = await Promise.all(
+        result.items.map(async (blog) => {
+          const tags = await BlogModel.getTags(blog.id);
+          const images = await BlogModel.getImages(blog.id);
+          const attachments = await BlogModel.getAttachments(blog.id);
+          const author = await BlogModel.getAuthor(blog.author_id);
 
-        if (jiveFormat === "true") {
-          return BlogModel.transformToJiveFormat(
-            blog,
-            tags,
-            images,
-            attachments,
-            author,
-            blog.place
-          );
+          if (jiveFormat === "true") {
+            return BlogModel.transformToJiveFormat(
+              blog,
+              tags,
+              images,
+              attachments,
+              author,
+              blog.place
+            );
+          }
+
+          return { ...blog, tags, images, attachments };
+        })
+      );
+
+      if (jiveFormat === "true") {
+        return res.json({
+          items: formatted,
+          totalPages: result.totalPages,
+          currentPage: result.currentPage,
+          totalItems: result.totalItems
+        });
+      }
+
+      res.json({
+        success: true,
+        data: formatted,
+        pagination: {
+          totalPages: result.totalPages,
+          currentPage: result.currentPage,
+          totalItems: result.totalItems,
+          itemsPerPage: result.itemsPerPage
         }
-
-        return { ...blog, tags, images, attachments };
-      })
-    );
-
-    // -------- FIXED OUTPUT FOR FRONTEND ----------
-    if (jiveFormat === "true") {
-      return res.json({
-        items: formatted,
-        totalPages: result.totalPages,
-        currentPage: result.currentPage,
-        totalItems: result.totalItems
+      });
+    } catch (error) {
+      console.error("Error fetching blogs:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch blogs",
+        error: error.message
       });
     }
-
-    // Default non-Jive format
-    res.json({
-      success: true,
-      data: formatted,
-      pagination: {
-        totalPages: result.totalPages,
-        currentPage: result.currentPage,
-        totalItems: result.totalItems,
-        itemsPerPage: result.itemsPerPage
-      }
-    });
-  } catch (error) {
-    console.error("Error fetching blogs:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch blogs",
-      error: error.message
-    });
-  }
-},
-
+  },
 
   // -----------------------------------
   // GET BLOG BY ID
@@ -272,6 +279,11 @@ async getAllBlogs(req, res) {
       if (updateData.categoryId) {
         updateData.category_id = updateData.categoryId;
         delete updateData.categoryId;
+      }
+
+      if (updateData.spaceId) {
+        updateData.space_id = updateData.spaceId;
+        delete updateData.spaceId;
       }
 
       if (updateData.placeId) {

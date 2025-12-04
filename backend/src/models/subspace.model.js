@@ -1,27 +1,64 @@
 import pool from '../utils/db.js';
 
 export const SubspaceModel = {
+  // Ensure default parent space "MFTBC" exists and return it
+  async ensureDefaultMFTBC() {
+    const name = 'MFTBC';
+
+    // Try to find existing
+    const existing = await pool.query(
+      'SELECT * FROM subspaces WHERE name = $1 LIMIT 1',
+      [name]
+    );
+
+    if (existing.rows.length > 0) {
+      return existing.rows[0];
+    }
+
+    // Create default parent subspace
+    const result = await pool.query(
+      `INSERT INTO subspaces (
+        name, description, content_html, image_url,
+        is_published, parent_subspace_id, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      RETURNING *`,
+      [
+        name,
+        'Default parent space for all MFTBC content',
+        '',
+        null,
+        true,
+        null
+      ]
+    );
+
+    return result.rows[0];
+  },
+
   async create(subspaceData) {
     const {
       name,
       description,
       content_html,
       image_url,
-      is_published
+      is_published,
+      parent_subspace_id
     } = subspaceData;
 
     const result = await pool.query(
       `INSERT INTO subspaces (
-        name, description, content_html, image_url, is_published,
+        name, description, content_html, image_url,
+        is_published, parent_subspace_id,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
       RETURNING *`,
       [
         name,
         description || '',
         content_html || '',
         image_url || null,
-        is_published !== undefined ? is_published : true
+        is_published !== undefined ? is_published : true,
+        parent_subspace_id || null
       ]
     );
 
@@ -36,6 +73,12 @@ export const SubspaceModel = {
     if (filters.is_published !== undefined) {
       query += ` AND is_published = $${paramIndex}`;
       params.push(filters.is_published);
+      paramIndex++;
+    }
+
+    if (filters.parent_subspace_id !== undefined && filters.parent_subspace_id !== null) {
+      query += ` AND parent_subspace_id = $${paramIndex}`;
+      params.push(filters.parent_subspace_id);
       paramIndex++;
     }
 

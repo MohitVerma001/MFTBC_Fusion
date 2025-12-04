@@ -489,3 +489,52 @@ INSERT INTO tags (name, slug) VALUES
 ('update', 'update'),
 ('urgent', 'urgent'),
 ('information', 'information');
+
+------------------------------------------------------------------
+-- BLOG LIKES TABLE (safe patch)
+------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS blog_likes (
+    id SERIAL PRIMARY KEY,
+    blog_id INTEGER NOT NULL REFERENCES blogs(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (blog_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_likes_blog ON blog_likes(blog_id);
+CREATE INDEX IF NOT EXISTS idx_blog_likes_user ON blog_likes(user_id);
+
+------------------------------------------------------------------
+-- BLOG COMMENTS TABLE (safe patch)
+------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS blog_comments (
+    id SERIAL PRIMARY KEY,
+    blog_id INTEGER NOT NULL REFERENCES blogs(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_comments_blog ON blog_comments(blog_id);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_user ON blog_comments(user_id);
+
+------------------------------------------------------------------
+-- TRIGGER FOR blog_comments.updated_at (SAFE)
+------------------------------------------------------------------
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_trigger WHERE tgname = 'update_blog_comments_updated_at'
+    ) THEN
+        DROP TRIGGER update_blog_comments_updated_at ON blog_comments;
+    END IF;
+END$$;
+
+CREATE TRIGGER update_blog_comments_updated_at
+BEFORE UPDATE ON blog_comments
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();

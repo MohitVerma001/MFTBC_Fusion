@@ -27,11 +27,13 @@ const CreateBlog = () => {
     restrictedComments: false,
     isPlaceBlog: false,
     placeId: "",
+    spaceId: "" // ⭐ NEW: selected space (MFTBC / DTA / etc.)
   });
 
   const [errors, setErrors] = useState({});
   const [tags, setTags] = useState([]);
   const [places, setPlaces] = useState([]);
+  const [spaces, setSpaces] = useState([]); // ⭐ NEW: list of subspaces / spaces
   const [tagSearch, setTagSearch] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,12 +41,13 @@ const CreateBlog = () => {
   const publishToOptions = [
     { value: "News", label: "News" },
     { value: "HR", label: "HR" },
-    { value: "IT", label: "IT" },
+    { value: "IT", label: "IT" }
   ];
 
   useEffect(() => {
     fetchTags();
     fetchPlaces();
+    fetchSpaces();
   }, []);
 
   useEffect(() => {
@@ -54,7 +57,7 @@ const CreateBlog = () => {
   const fetchTags = async (search = "") => {
     try {
       const url = search
-        ? `${API_URL}/tags?search=${search}`
+        ? `${API_URL}/tags?search=${encodeURIComponent(search)}`
         : `${API_URL}/tags`;
       const response = await fetch(url);
       const result = await response.json();
@@ -74,11 +77,36 @@ const CreateBlog = () => {
     }
   };
 
+  const fetchSpaces = async () => {
+    try {
+      const response = await fetch(`${API_URL}/subspaces?is_published=true`);
+      const result = await response.json();
+
+      if (result.success) {
+        const list = result.data || [];
+        setSpaces(list);
+
+        // Auto-set default MFTBC if nothing selected
+        const mftbc = list.find(
+          (s) => s.name && s.name.toLowerCase() === "mftbc"
+        );
+        if (mftbc && !formData.spaceId) {
+          setFormData((prev) => ({
+            ...prev,
+            spaceId: String(mftbc.id)
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching spaces:", error);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : value
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -103,7 +131,7 @@ const CreateBlog = () => {
       if (!formData.tags.some((t) => t.id === existingTag.id)) {
         setFormData((prev) => ({
           ...prev,
-          tags: [...prev.tags, existingTag],
+          tags: [...prev.tags, existingTag]
         }));
       }
       setTagInput("");
@@ -114,14 +142,14 @@ const CreateBlog = () => {
       const response = await fetch(`${API_URL}/tags`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: tagInput }),
+        body: JSON.stringify({ name: tagInput })
       });
 
       const result = await response.json();
       if (result.success) {
         setFormData((prev) => ({
           ...prev,
-          tags: [...prev.tags, result.data],
+          tags: [...prev.tags, result.data]
         }));
         setTags((prev) => [...prev, result.data]);
       }
@@ -134,7 +162,7 @@ const CreateBlog = () => {
   const handleRemoveTag = (tagToRemove) => {
     setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter((tag) => tag.id !== tagToRemove.id),
+      tags: prev.tags.filter((tag) => tag.id !== tagToRemove.id)
     }));
   };
 
@@ -142,7 +170,7 @@ const CreateBlog = () => {
     if (!formData.tags.some((t) => t.id === tag.id)) {
       setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, tag],
+        tags: [...prev.tags, tag]
       }));
     }
   };
@@ -150,12 +178,20 @@ const CreateBlog = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.publishTo) newErrors.publishTo = "Please select where to publish";
+    if (!formData.publishTo)
+      newErrors.publishTo = "Please select where to publish";
+
     if (formData.publishTo === "HR" && !formData.categoryId)
       newErrors.categoryId = "Select a category";
+
     if (!formData.title.trim()) newErrors.title = "Title is required";
+
     if (!formData.content.trim() || formData.content === "<p><br></p>")
       newErrors.content = "Content is required";
+
+    if (!formData.spaceId)
+      newErrors.spaceId = "Please select a space (e.g. MFTBC, DTA)";
+
     if (formData.isPlaceBlog && !formData.placeId)
       newErrors.placeId = "Select a place";
 
@@ -163,7 +199,6 @@ const CreateBlog = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ⭐ UPDATED SUBMIT HANDLER WITH spaceId = 6220 ⭐
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -178,7 +213,7 @@ const CreateBlog = () => {
           fd.append("file", image.file);
           const res = await fetch(`${API_URL}/upload/single`, {
             method: "POST",
-            body: fd,
+            body: fd
           });
           const out = await res.json();
           if (out.success) imageUrls.push(out.data.url);
@@ -194,7 +229,7 @@ const CreateBlog = () => {
           fd.append("file", file.file);
           const res = await fetch(`${API_URL}/upload/single`, {
             method: "POST",
-            body: fd,
+            body: fd
           });
           const out = await res.json();
           if (out.success) {
@@ -202,7 +237,7 @@ const CreateBlog = () => {
               url: out.data.url,
               name: out.data.filename,
               size: out.data.size,
-              contentType: out.data.mimeType,
+              contentType: out.data.mimeType
             });
           }
         } else if (file.url) {
@@ -210,7 +245,7 @@ const CreateBlog = () => {
             url: file.url,
             name: file.name,
             size: file.size || 0,
-            contentType: file.type || "application/octet-stream",
+            contentType: file.type || "application/octet-stream"
           });
         }
       }
@@ -227,13 +262,10 @@ const CreateBlog = () => {
         restrictReplies: formData.restrictedComments,
         isPlaceBlog: formData.isPlaceBlog,
         authorId: 1,
-
-        // ⭐ FIXED: ALWAYS SEND MFTBC SPACE ID ⭐
-        spaceId: 6220,
-
+        spaceId: formData.spaceId ? Number(formData.spaceId) : undefined,
         tags: formData.tags.map((t) => t.name),
         contentImages: imageUrls,
-        attachments: attachmentData,
+        attachments: attachmentData
       };
 
       if (formData.categoryId) payload.categoryId = formData.categoryId;
@@ -242,7 +274,7 @@ const CreateBlog = () => {
       const response = await fetch(`${API_URL}/blogs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
@@ -251,7 +283,7 @@ const CreateBlog = () => {
         alert("Blog posted successfully!");
         navigate(formData.publishTo === "News" ? "/news" : "/");
       } else {
-        alert("Failed: " + result.message);
+        alert("Failed: " + (result?.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Error creating blog:", err);
@@ -280,6 +312,22 @@ const CreateBlog = () => {
             options={publishToOptions}
             required
             error={errors.publishTo}
+            placeholder="Select where to publish"
+          />
+
+          {/* Space selection – MFTBC / DTA / etc. */}
+          <SelectField
+            label="Space"
+            name="spaceId"
+            value={formData.spaceId}
+            onChange={handleInputChange}
+            options={spaces.map((s) => ({
+              value: s.id,
+              label: s.name
+            }))}
+            required
+            error={errors.spaceId}
+            placeholder="Select a space (e.g. MFTBC, DTA)"
           />
 
           <CategoryDropdown
@@ -441,7 +489,7 @@ const CreateBlog = () => {
                 onChange={handleInputChange}
                 options={places.map((p) => ({
                   value: p.id,
-                  label: p.name,
+                  label: p.name
                 }))}
                 required
                 error={errors.placeId}

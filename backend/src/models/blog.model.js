@@ -40,16 +40,16 @@ export const BlogModel = {
       RETURNING *`,
       [
         title,
-        content || "",
-        content_html || content || "",
+        content || '',
+        content_html || content || '',
         publish_to,
         category_id || null,
-        space_id || 6220,      // DEFAULT MFTBC SPACE
+        space_id || null,
         place_id || null,
         restricted_comments || false,
         is_place_blog || false,
         author_id || 1,
-        status || "published",
+        status || 'published',
         published_at || new Date()
       ]
     );
@@ -59,100 +59,106 @@ export const BlogModel = {
 
   async findAll(filters = {}) {
     const params = [];
-  let where = "WHERE 1=1";
-  let i = 1;
+    let where = 'WHERE 1=1';
+    let i = 1;
 
-  // ----- APPLY FILTERS -----
-  if (filters.publishTo) {
-    where += ` AND b.publish_to = $${i}`;
-    params.push(filters.publishTo);
-    i++;
-  }
+    // ----- APPLY FILTERS -----
+    if (filters.publishTo) {
+      where += ` AND b.publish_to = $${i}`;
+      params.push(filters.publishTo);
+      i++;
+    }
 
-  if (filters.categoryId) {
-    where += ` AND b.category_id = $${i}`;
-    params.push(filters.categoryId);
-    i++;
-  }
+    if (filters.categoryId) {
+      where += ` AND b.category_id = $${i}`;
+      params.push(filters.categoryId);
+      i++;
+    }
 
-  if (filters.placeId) {
-    where += ` AND b.place_id = $${i}`;
-    params.push(filters.placeId);
-    i++;
-  }
+    if (filters.spaceId) {
+      where += ` AND b.space_id = $${i}`;
+      params.push(filters.spaceId);
+      i++;
+    }
 
-  if (filters.authorId) {
-    where += ` AND b.author_id = $${i}`;
-    params.push(filters.authorId);
-    i++;
-  }
+    if (filters.placeId) {
+      where += ` AND b.place_id = $${i}`;
+      params.push(filters.placeId);
+      i++;
+    }
 
-  if (filters.search) {
-    where += ` AND (b.title ILIKE $${i} OR b.content ILIKE $${i})`;
-    params.push(`%${filters.search}%`);
-    i++;
-  }
+    if (filters.authorId) {
+      where += ` AND b.author_id = $${i}`;
+      params.push(filters.authorId);
+      i++;
+    }
 
-  if (filters.tags) {
-    where += ` AND EXISTS (
-      SELECT 1 FROM blog_tags bt
-      JOIN tags t ON bt.tag_id = t.id
-      WHERE bt.blog_id = b.id AND t.name = $${i}
-    )`;
-    params.push(filters.tags);
-    i++;
-  }
+    if (filters.search) {
+      where += ` AND (b.title ILIKE $${i} OR b.content ILIKE $${i})`;
+      params.push(`%${filters.search}%`);
+      i++;
+    }
 
-  if (filters.from) {
-    where += ` AND b.published_at >= $${i}`;
-    params.push(filters.from);
-    i++;
-  }
+    if (filters.tags) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM blog_tags bt
+        JOIN tags t ON bt.tag_id = t.id
+        WHERE bt.blog_id = b.id AND t.name = $${i}
+      )`;
+      params.push(filters.tags);
+      i++;
+    }
 
-  if (filters.to) {
-    where += ` AND b.published_at <= $${i}`;
-    params.push(filters.to);
-    i++;
-  }
+    if (filters.from) {
+      where += ` AND b.published_at >= $${i}`;
+      params.push(filters.from);
+      i++;
+    }
 
-  // ----- PAGINATION -----
-  const limit = filters.limit ? parseInt(filters.limit) : 9;
-  const page = filters.page ? parseInt(filters.page) : 1;
-  const offset = (page - 1) * limit;
+    if (filters.to) {
+      where += ` AND b.published_at <= $${i}`;
+      params.push(filters.to);
+      i++;
+    }
 
-  // ----- COUNT QUERY (safe) -----
-  const countSQL = `
-    SELECT COUNT(*) AS total
-    FROM blogs b
-    ${where}
-  `;
+    // ----- PAGINATION -----
+    const limit = filters.limit ? parseInt(filters.limit, 10) : 9;
+    const page = filters.page ? parseInt(filters.page, 10) : 1;
+    const offset = (page - 1) * limit;
 
-  const countResult = await pool.query(countSQL, params);
-  const totalItems = parseInt(countResult.rows[0].total);
-  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+    // ----- COUNT QUERY -----
+    const countSQL = `
+      SELECT COUNT(*) AS total
+      FROM blogs b
+      ${where}
+    `;
 
-  // ----- MAIN QUERY -----
-  const dataSQL = `
-    SELECT 
-      b.*,
-      (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS "likeCount",
-      COALESCE(json_build_object('id', p.id, 'name', p.name), null) AS place
-    FROM blogs b
-    LEFT JOIN places p ON b.place_id = p.id
-    ${where}
-    ORDER BY b.created_at DESC
-    LIMIT $${i} OFFSET $${i + 1}
-  `;
+    const countResult = await pool.query(countSQL, params);
+    const totalItems = parseInt(countResult.rows[0].total, 10) || 0;
+    const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
-  const dataResult = await pool.query(dataSQL, [...params, limit, offset]);
+    // ----- MAIN QUERY -----
+    const dataSQL = `
+      SELECT 
+        b.*,
+        (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS "likeCount",
+        COALESCE(json_build_object('id', p.id, 'name', p.name), null) AS place
+      FROM blogs b
+      LEFT JOIN places p ON b.place_id = p.id
+      ${where}
+      ORDER BY b.created_at DESC
+      LIMIT $${i} OFFSET $${i + 1}
+    `;
 
-  return {
-    items: dataResult.rows,
-    totalPages,
-    currentPage: page,
-    totalItems,
-    itemsPerPage: limit
-  };
+    const dataResult = await pool.query(dataSQL, [...params, limit, offset]);
+
+    return {
+      items: dataResult.rows,
+      totalPages,
+      currentPage: page,
+      totalItems,
+      itemsPerPage: limit
+    };
   },
 
   async findById(id) {
@@ -169,7 +175,7 @@ export const BlogModel = {
 
   async addTags(blogId, tagIds) {
     if (!tagIds.length) return [];
-    const values = tagIds.map((_, idx) => `($1,$${idx + 2})`).join(",");
+    const values = tagIds.map((_, idx) => `($1,$${idx + 2})`).join(',');
     const result = await pool.query(
       `INSERT INTO blog_tags (blog_id, tag_id)
        VALUES ${values} ON CONFLICT DO NOTHING RETURNING *`,
@@ -189,7 +195,8 @@ export const BlogModel = {
   },
 
   async addImages(blogId, urls) {
-    const values = urls.map((_, idx) => `($1,$${idx + 2},NOW())`).join(",");
+    if (!urls.length) return [];
+    const values = urls.map((_, idx) => `($1,$${idx + 2},NOW())`).join(',');
     const result = await pool.query(
       `INSERT INTO blog_images (blog_id,image_url,created_at)
        VALUES ${values} RETURNING *`,
@@ -206,7 +213,6 @@ export const BlogModel = {
     return result.rows;
   },
 
-  // ✅ FIX: ADD THIS FUNCTION (Missing Earlier)
   async getAttachments(blogId) {
     const result = await pool.query(
       `SELECT id, file_url, file_name, file_size, mime_type, created_at
@@ -222,7 +228,7 @@ export const BlogModel = {
     if (!attachments.length) return [];
     const rows = attachments.map((_, idx) =>
       `($1,$${idx * 4 + 2},$${idx * 4 + 3},$${idx * 4 + 4},$${idx * 4 + 5},NOW())`
-    ).join(",");
+    ).join(',');
 
     const params = [blogId];
     attachments.forEach(att => {
@@ -248,21 +254,24 @@ export const BlogModel = {
       const user = result.rows[0];
       return {
         id: String(user.id),
-        displayName: user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User',
+        displayName:
+          user.display_name ||
+          `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+          'User',
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
         department: user.department,
         jobTitle: user.job_title,
         avatarUrl: user.avatar_url,
-        type: "person"
+        type: 'person'
       };
     }
 
     return {
       id: String(authorId),
-      displayName: "User",
-      type: "person"
+      displayName: 'User',
+      type: 'person'
     };
   },
 
@@ -270,7 +279,7 @@ export const BlogModel = {
     const contentImages = images.map(img => ({
       id: String(img.id),
       ref: toAbsoluteUrl(img.image_url),
-      name: img.image_url.split("/").pop()
+      name: img.image_url.split('/').pop()
     }));
 
     return {
@@ -292,9 +301,9 @@ export const BlogModel = {
         contentType: a.mime_type
       })),
       contentImages,
-      parentPlace: place || { id: "6220", name: "MFTBC", type: "blog" },
+      parentPlace: place || { id: '6220', name: 'MFTBC', type: 'blog' },
       restrictReplies: blog.restricted_comments,
-      type: "post"
+      type: 'post'
     };
   },
 
@@ -303,7 +312,7 @@ export const BlogModel = {
       `SELECT COUNT(*) as count FROM blog_likes WHERE blog_id = $1`,
       [blogId]
     );
-    return parseInt(result.rows[0].count);
+    return parseInt(result.rows[0].count, 10) || 0;
   },
 
   async isLikedByUser(blogId, userId) {
