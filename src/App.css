@@ -54,3 +54,132 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* ===== Rich Text Editor Enhancements ===== */
+
+.rich-text-editor-wrapper {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+
+  /* allow vertical resize of the editor container */
+  resize: vertical;
+  min-height: 220px;
+  max-height: 700px;
+}
+
+/* ReactQuill container */
+.rich-text-editor .ql-toolbar {
+  background: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+  border: none;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.rich-text-editor .ql-container {
+  border: none;
+  border-radius: 0 0 8px 8px;
+  font-family: "Roboto", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 15px;
+}
+
+/* Editor area */
+.rich-text-editor .ql-editor {
+  min-height: 180px;
+  padding: 16px;
+  line-height: 1.6;
+}
+
+/* Images: responsive by default */
+.rich-text-editor .ql-editor img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 12px 0;
+}
+
+/* Custom float classes for images (set via JS) */
+.rich-text-editor .ql-editor img.rte-img-left {
+  float: left;
+  margin: 8px 18px 12px 0;
+}
+
+.rich-text-editor .ql-editor img.rte-img-right {
+  float: right;
+  margin: 8px 0 12px 18px;
+}
+
+.rich-text-editor .ql-editor img.rte-img-center {
+  display: block;
+  margin: 12px auto;
+}
+
+/* Clear floats inside paragraphs */
+.rich-text-editor .ql-editor::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* Error state */
+.is-invalid-editor {
+  border-color: #dc3545;
+}
+
+/* ===== Image tools panel ===== */
+
+.rte-image-tools {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.rte-tools-label {
+  font-weight: 500;
+  color: #4b5563;
+  margin-right: 4px;
+}
+
+.rte-tools-group {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* ===== Link Modal ===== */
+
+.rte-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.rte-modal {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px 22px 18px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+}
+
+.rte-modal-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rte-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
