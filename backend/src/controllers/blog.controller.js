@@ -126,8 +126,13 @@ export const BlogController = {
         publishTo,
         categoryId,
         placeId,
+        authorId,
         search,
+        tags,
+        from,
+        to,
         limit,
+        page,
         status,
         jiveFormat
       } = req.query;
@@ -136,15 +141,20 @@ export const BlogController = {
         publishTo: publishTo || publish_to,
         categoryId,
         placeId,
+        authorId,
         search,
+        tags,
+        from,
+        to,
         limit,
+        page,
         status
       };
 
-      const blogs = await BlogModel.findAll(filters);
+      const result = await BlogModel.findAll(filters);
 
       const formatted = await Promise.all(
-        blogs.map(async (blog) => {
+        result.items.map(async (blog) => {
           const tags = await BlogModel.getTags(blog.id);
           const images = await BlogModel.getImages(blog.id);
           const attachments = await BlogModel.getAttachments(blog.id);
@@ -165,11 +175,24 @@ export const BlogController = {
         })
       );
 
-      if (jiveFormat === "true") return res.json(formatted);
+      if (jiveFormat === "true") {
+        return res.json({
+          items: formatted,
+          totalPages: result.totalPages,
+          currentPage: result.currentPage,
+          totalItems: result.totalItems
+        });
+      }
 
       res.json({
         success: true,
-        data: formatted
+        data: formatted,
+        pagination: {
+          totalPages: result.totalPages,
+          currentPage: result.currentPage,
+          totalItems: result.totalItems,
+          itemsPerPage: result.itemsPerPage
+        }
       });
     } catch (error) {
       console.error("Error fetching blogs:", error);
@@ -314,6 +337,169 @@ export const BlogController = {
       res.status(500).json({
         success: false,
         message: "Failed to delete blog",
+        error: error.message
+      });
+    }
+  },
+
+  // -----------------------------------
+  // LIKE BLOG
+  // -----------------------------------
+  async likeBlog(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.body.userId || 1;
+
+      const result = await BlogModel.toggleLike(id, userId);
+      const likeCount = await BlogModel.getLikeCount(id);
+
+      res.json({
+        success: true,
+        liked: result.liked,
+        likeCount
+      });
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to toggle like",
+        error: error.message
+      });
+    }
+  },
+
+  // -----------------------------------
+  // UNLIKE BLOG
+  // -----------------------------------
+  async unlikeBlog(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.body.userId || 1;
+
+      await BlogModel.toggleLike(id, userId);
+      const likeCount = await BlogModel.getLikeCount(id);
+
+      res.json({
+        success: true,
+        liked: false,
+        likeCount
+      });
+    } catch (error) {
+      console.error("Error unliking:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to unlike",
+        error: error.message
+      });
+    }
+  },
+
+  // -----------------------------------
+  // GET BLOG LIKES
+  // -----------------------------------
+  async getBlogLikes(req, res) {
+    try {
+      const { id } = req.params;
+
+      const likes = await BlogModel.getLikes(id);
+      const likeCount = await BlogModel.getLikeCount(id);
+
+      res.json({
+        success: true,
+        data: likes,
+        count: likeCount
+      });
+    } catch (error) {
+      console.error("Error fetching likes:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch likes",
+        error: error.message
+      });
+    }
+  },
+
+  // -----------------------------------
+  // GET BLOG COMMENTS
+  // -----------------------------------
+  async getBlogComments(req, res) {
+    try {
+      const { id } = req.params;
+
+      const comments = await BlogModel.getComments(id);
+
+      res.json({
+        success: true,
+        data: comments
+      });
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch comments",
+        error: error.message
+      });
+    }
+  },
+
+  // -----------------------------------
+  // ADD COMMENT
+  // -----------------------------------
+  async addComment(req, res) {
+    try {
+      const { id } = req.params;
+      const { comment, userId } = req.body;
+
+      if (!comment || !comment.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Comment is required"
+        });
+      }
+
+      const finalUserId = userId || 1;
+      const newComment = await BlogModel.addComment(id, finalUserId, comment);
+
+      res.status(201).json({
+        success: true,
+        data: newComment
+      });
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to add comment",
+        error: error.message
+      });
+    }
+  },
+
+  // -----------------------------------
+  // DELETE COMMENT
+  // -----------------------------------
+  async deleteComment(req, res) {
+    try {
+      const { id, commentId } = req.params;
+      const userId = req.body.userId || 1;
+
+      const deletedComment = await BlogModel.deleteComment(commentId, userId);
+
+      if (!deletedComment) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found or unauthorized"
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Comment deleted successfully"
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete comment",
         error: error.message
       });
     }

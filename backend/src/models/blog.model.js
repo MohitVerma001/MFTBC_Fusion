@@ -46,8 +46,9 @@ export const BlogModel = {
 
   async findAll(filters = {}) {
     let query = `
-      SELECT b.*, 
-             COALESCE(json_build_object('id', p.id, 'name', p.name), null) AS place
+      SELECT b.*,
+             COALESCE(json_build_object('id', p.id, 'name', p.name), null) AS place,
+             (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likeCount
       FROM blogs b
       LEFT JOIN places p ON b.place_id = p.id
       WHERE 1=1
@@ -73,16 +74,63 @@ export const BlogModel = {
       i++;
     }
 
+    if (filters.authorId) {
+      query += ` AND b.author_id = $${i}`;
+      params.push(filters.authorId);
+      i++;
+    }
+
     if (filters.search) {
       query += ` AND (b.title ILIKE $${i} OR b.content ILIKE $${i})`;
       params.push(`%${filters.search}%`);
       i++;
     }
 
+    if (filters.tags) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM blog_tags bt
+        INNER JOIN tags t ON bt.tag_id = t.id
+        WHERE bt.blog_id = b.id AND t.name = $${i}
+      )`;
+      params.push(filters.tags);
+      i++;
+    }
+
+    if (filters.from) {
+      query += ` AND b.published_at >= $${i}`;
+      params.push(filters.from);
+      i++;
+    }
+
+    if (filters.to) {
+      query += ` AND b.published_at <= $${i}`;
+      params.push(filters.to);
+      i++;
+    }
+
     query += ` ORDER BY b.created_at DESC`;
 
+    const limit = filters.limit ? parseInt(filters.limit) : 9;
+    const page = filters.page ? parseInt(filters.page) : 1;
+    const offset = (page - 1) * limit;
+
+    const countQuery = query.replace(/SELECT b\.\*.*?FROM blogs b/s, 'SELECT COUNT(*) FROM blogs b');
+    const countResult = await pool.query(countQuery, params);
+    const totalItems = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    query += ` LIMIT $${i} OFFSET $${i + 1}`;
+    params.push(limit, offset);
+
     const result = await pool.query(query, params);
-    return result.rows;
+
+    return {
+      items: result.rows,
+      totalPages,
+      currentPage: page,
+      totalItems,
+      itemsPerPage: limit
+    };
   },
 
   async findById(id) {
@@ -190,7 +238,7 @@ export const BlogModel = {
       updated: new Date(blog.updated_at).toISOString(),
       author,
       tags: tags.map(t => t.name),
-      likeCount: 0,
+      likeCount: blog.likeCount || 0,
       followerCount: 0,
       viewCount: 0,
       attachments: attachments.map(a => ({
@@ -205,6 +253,115 @@ export const BlogModel = {
       restrictReplies: blog.restricted_comments,
       type: "post"
     };
+  },
+
+  async getLikeCount(blogId) {
+    const result = await pool.query(
+      `SELECT COUNT(*) as count FROM blog_likes WHERE blog_id = $1`,
+      [blogId]
+    );
+    return parseInt(result.rows[0].count);
+  },
+
+  async isLikedByUser(blogId, userId) {
+    const result = await pool.query(
+      `SELECT id FROM blog_likes WHERE blog_id = $1 AND user_id = $2`,
+      [blogId, userId]
+    );
+    return result.rows.length > 0;
+  },
+
+  async toggleLike(blogId, userId) {
+    const isLiked = await this.isLikedByUser(blogId, userId);
+
+    if (isLiked) {
+      await pool.query(
+        `DELETE FROM blog_likes WHERE blog_id = $1 AND user_id = $2`,
+        [blogId, userId]
+      );
+      return { liked: false };
+    } else {
+      await pool.query(
+        `INSERT INTO blog_likes (blog_id, user_id, created_at) VALUES ($1, $2, NOW())`,
+        [blogId, userId]
+      );
+      return { liked: true };
+    }
+  },
+
+  async getLikes(blogId) {
+    const result = await pool.query(
+      `SELECT bl.*, u.display_name, u.email
+       FROM blog_likes bl
+       LEFT JOIN users u ON bl.user_id = u.id
+       WHERE bl.blog_id = $1
+       ORDER BY bl.created_at DESC`,
+      [blogId]
+    );
+    return result.rows;
+  },
+
+  async getComments(blogId) {
+    const result = await pool.query(
+      `SELECT bc.*, u.display_name, u.email
+       FROM blog_comments bc
+       LEFT JOIN users u ON bc.user_id = u.id
+       WHERE bc.blog_id = $1
+       ORDER BY bc.created_at DESC`,
+      [blogId]
+    );
+    return result.rows;
+  },
+
+  async addComment(blogId, userId, comment) {
+    const result = await pool.query(
+      `INSERT INTO blog_comments (blog_id, user_id, comment, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       RETURNING *`,
+      [blogId, userId, comment]
+    );
+    return result.rows[0];
+  },
+
+  async deleteComment(commentId, userId) {
+    const result = await pool.query(
+      `DELETE FROM blog_comments WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [commentId, userId]
+    );
+    return result.rows[0];
+  },
+
+  async update(id, updateData) {
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    Object.keys(updateData).forEach(key => {
+      if (key !== 'id') {
+        fields.push(`${key} = $${paramIndex}`);
+        values.push(updateData[key]);
+        paramIndex++;
+      }
+    });
+
+    if (fields.length === 0) {
+      return await this.findById(id);
+    }
+
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE blogs SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    return result.rows[0];
+  },
+
+  async delete(id) {
+    await pool.query('DELETE FROM blogs WHERE id = $1', [id]);
+    return { success: true };
   }
 };
 
