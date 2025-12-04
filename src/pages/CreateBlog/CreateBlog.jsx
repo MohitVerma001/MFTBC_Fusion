@@ -11,7 +11,7 @@ import FileUpload from "../../components/FormComponents/FileUpload";
 import CategoryDropdown from "../../components/CategoryDropdown/CategoryDropdown";
 import "./CreateBlog.css";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const CreateBlog = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const CreateBlog = () => {
     attachments: [],
     restrictedComments: false,
     isPlaceBlog: false,
-    placeId: ""
+    placeId: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -48,21 +48,19 @@ const CreateBlog = () => {
   }, []);
 
   useEffect(() => {
-    if (tagSearch) {
-      fetchTags(tagSearch);
-    }
+    if (tagSearch) fetchTags(tagSearch);
   }, [tagSearch]);
 
   const fetchTags = async (search = "") => {
     try {
-      const url = search ? `${API_URL}/tags?search=${search}` : `${API_URL}/tags`;
+      const url = search
+        ? `${API_URL}/tags?search=${search}`
+        : `${API_URL}/tags`;
       const response = await fetch(url);
       const result = await response.json();
-      if (result.success) {
-        setTags(result.data);
-      }
+      if (result.success) setTags(result.data);
     } catch (error) {
-      console.error('Error fetching tags:', error);
+      console.error("Error fetching tags:", error);
     }
   };
 
@@ -70,11 +68,9 @@ const CreateBlog = () => {
     try {
       const response = await fetch(`${API_URL}/places`);
       const result = await response.json();
-      if (result.success) {
-        setPlaces(result.data);
-      }
+      if (result.success) setPlaces(result.data);
     } catch (error) {
-      console.error('Error fetching places:', error);
+      console.error("Error fetching places:", error);
     }
   };
 
@@ -82,7 +78,7 @@ const CreateBlog = () => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -90,10 +86,7 @@ const CreateBlog = () => {
   };
 
   const handleContentChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      content: value,
-    }));
+    setFormData((prev) => ({ ...prev, content: value }));
     if (errors.content) {
       setErrors((prev) => ({ ...prev, content: "" }));
     }
@@ -102,13 +95,15 @@ const CreateBlog = () => {
   const handleAddTag = async () => {
     if (!tagInput.trim()) return;
 
-    const existingTag = tags.find(t => t.name.toLowerCase() === tagInput.toLowerCase());
+    const existingTag = tags.find(
+      (t) => t.name.toLowerCase() === tagInput.toLowerCase()
+    );
 
     if (existingTag) {
-      if (!formData.tags.some(t => t.id === existingTag.id)) {
-        setFormData(prev => ({
+      if (!formData.tags.some((t) => t.id === existingTag.id)) {
+        setFormData((prev) => ({
           ...prev,
-          tags: [...prev.tags, existingTag]
+          tags: [...prev.tags, existingTag],
         }));
       }
       setTagInput("");
@@ -117,22 +112,22 @@ const CreateBlog = () => {
 
     try {
       const response = await fetch(`${API_URL}/tags`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: tagInput })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: tagInput }),
       });
-      const result = await response.json();
 
+      const result = await response.json();
       if (result.success) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          tags: [...prev.tags, result.data]
+          tags: [...prev.tags, result.data],
         }));
-        setTags(prev => [...prev, result.data]);
+        setTags((prev) => [...prev, result.data]);
       }
       setTagInput("");
     } catch (error) {
-      console.error('Error creating tag:', error);
+      console.error("Error creating tag:", error);
     }
   };
 
@@ -144,10 +139,10 @@ const CreateBlog = () => {
   };
 
   const handleTagSelect = (tag) => {
-    if (!formData.tags.some(t => t.id === tag.id)) {
-      setFormData(prev => ({
+    if (!formData.tags.some((t) => t.id === tag.id)) {
+      setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, tag]
+        tags: [...prev.tags, tag],
       }));
     }
   };
@@ -155,29 +150,22 @@ const CreateBlog = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.publishTo) {
-      newErrors.publishTo = "Please select where to publish";
-    }
-    if (formData.publishTo === "HR" && !formData.categoryId) {
-      newErrors.categoryId = "Please select a category for HR";
-    }
-    if (!formData.title.trim()) {
-      newErrors.title = "Title is required";
-    }
-    if (!formData.content.trim() || formData.content === '<p><br></p>') {
+    if (!formData.publishTo) newErrors.publishTo = "Please select where to publish";
+    if (formData.publishTo === "HR" && !formData.categoryId)
+      newErrors.categoryId = "Select a category";
+    if (!formData.title.trim()) newErrors.title = "Title is required";
+    if (!formData.content.trim() || formData.content === "<p><br></p>")
       newErrors.content = "Content is required";
-    }
-    if (formData.isPlaceBlog && !formData.placeId) {
-      newErrors.placeId = "Please select a place";
-    }
+    if (formData.isPlaceBlog && !formData.placeId)
+      newErrors.placeId = "Select a place";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ⭐ UPDATED SUBMIT HANDLER WITH spaceId = 6220 ⭐
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setLoading(true);
@@ -186,126 +174,91 @@ const CreateBlog = () => {
       const imageUrls = [];
       for (const image of formData.contentImages) {
         if (image.file) {
-          const uploadFormData = new FormData();
-          uploadFormData.append('file', image.file);
-
-          const uploadResponse = await fetch(`${API_URL}/upload/single`, {
-            method: 'POST',
-            body: uploadFormData,
+          const fd = new FormData();
+          fd.append("file", image.file);
+          const res = await fetch(`${API_URL}/upload/single`, {
+            method: "POST",
+            body: fd,
           });
-
-          const uploadResult = await uploadResponse.json();
-          if (uploadResult.success) {
-            imageUrls.push(uploadResult.data.url);
-          }
+          const out = await res.json();
+          if (out.success) imageUrls.push(out.data.url);
         } else if (image.url) {
           imageUrls.push(image.url);
         }
       }
 
       const attachmentData = [];
-      for (const attachment of formData.attachments) {
-        if (attachment.file) {
-          const uploadFormData = new FormData();
-          uploadFormData.append('file', attachment.file);
-
-          const uploadResponse = await fetch(`${API_URL}/upload/single`, {
-            method: 'POST',
-            body: uploadFormData,
+      for (const file of formData.attachments) {
+        if (file.file) {
+          const fd = new FormData();
+          fd.append("file", file.file);
+          const res = await fetch(`${API_URL}/upload/single`, {
+            method: "POST",
+            body: fd,
           });
-
-          const uploadResult = await uploadResponse.json();
-          if (uploadResult.success) {
+          const out = await res.json();
+          if (out.success) {
             attachmentData.push({
-              url: uploadResult.data.url,
-              name: uploadResult.data.filename,
-              size: uploadResult.data.size,
-              contentType: uploadResult.data.mimeType
+              url: out.data.url,
+              name: out.data.filename,
+              size: out.data.size,
+              contentType: out.data.mimeType,
             });
           }
-        } else if (attachment.url) {
+        } else if (file.url) {
           attachmentData.push({
-            url: attachment.url,
-            name: attachment.name || 'file',
-            size: attachment.size || 0,
-            contentType: attachment.type || 'application/octet-stream'
+            url: file.url,
+            name: file.name,
+            size: file.size || 0,
+            contentType: file.type || "application/octet-stream",
           });
         }
       }
 
-      const wrappedContent = formData.content.startsWith('<body>')
+      const wrappedContent = formData.content.startsWith("<body>")
         ? formData.content
         : `<body>${formData.content}</body>`;
 
-      const blogPayload = {
+      const payload = {
         subject: formData.title,
         content: formData.content,
-        contentHtml: wrappedContent,
-        publishTo: formData.publishTo,
+        content_html: wrappedContent,
+        publish_to: formData.publishTo,
         restrictReplies: formData.restrictedComments,
         isPlaceBlog: formData.isPlaceBlog,
-        tags: formData.tags.map(t => t.name),
+        authorId: 1,
+
+        // ⭐ FIXED: ALWAYS SEND MFTBC SPACE ID ⭐
+        spaceId: 6220,
+
+        tags: formData.tags.map((t) => t.name),
         contentImages: imageUrls,
         attachments: attachmentData,
-        authorId: 1
       };
 
-      if (formData.categoryId) {
-        blogPayload.categoryId = formData.categoryId;
-      }
-
-      if (formData.placeId) {
-        blogPayload.placeId = formData.placeId;
-      }
+      if (formData.categoryId) payload.categoryId = formData.categoryId;
+      if (formData.placeId) payload.placeId = formData.placeId;
 
       const response = await fetch(`${API_URL}/blogs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(blogPayload),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
 
-      if (result && result.id) {
-        console.log('Blog created successfully:', result);
-
-        const successMessage = document.createElement('div');
-        successMessage.className = 'success-animation';
-        successMessage.innerHTML = `
-          <div class="success-checkmark">
-            <div class="check-icon">
-              <span class="icon-line line-tip"></span>
-              <span class="icon-line line-long"></span>
-              <div class="icon-circle"></div>
-              <div class="icon-fix"></div>
-            </div>
-          </div>
-          <h2>Blog Published Successfully!</h2>
-          <p>Blog ID: ${result.id}</p>
-        `;
-        document.body.appendChild(successMessage);
-
-        setTimeout(() => {
-          successMessage.remove();
-          if (formData.publishTo === "News") {
-            navigate("/news");
-          } else {
-            navigate("/");
-          }
-        }, 2000);
-      } else if (result.success === false) {
-        alert(`Failed to publish blog: ${result.message}`);
+      if (result?.id) {
+        alert("Blog posted successfully!");
+        navigate(formData.publishTo === "News" ? "/news" : "/");
       } else {
-        alert('Failed to publish blog. Please try again.');
+        alert("Failed: " + result.message);
       }
-    } catch (error) {
-      console.error("Error creating blog:", error);
-      alert("Failed to publish blog. Please try again.");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error("Error creating blog:", err);
+      alert("Failed to publish blog");
     }
+
+    setLoading(false);
   };
 
   return (
@@ -318,7 +271,7 @@ const CreateBlog = () => {
         onCancel={() => navigate(-1)}
         submitLabel={loading ? "Publishing..." : "Publish Blog"}
       >
-        <FormSection title="Publish Type" icon="📍" className="animate-slide-in">
+        <FormSection title="Publish Type" icon="📍">
           <SelectField
             label="Publish To"
             name="publishTo"
@@ -327,40 +280,40 @@ const CreateBlog = () => {
             options={publishToOptions}
             required
             error={errors.publishTo}
-            placeholder="Select a section..."
           />
 
           <CategoryDropdown
             value={formData.categoryId}
-            onChange={(name, value) => setFormData(prev => ({ ...prev, categoryId: value }))}
+            onChange={(name, value) =>
+              setFormData((prev) => ({ ...prev, categoryId: value }))
+            }
             publishTo={formData.publishTo}
             error={errors.categoryId}
             required={formData.publishTo === "HR"}
           />
         </FormSection>
 
-        <FormSection title="Basic Information" icon="📝" className="animate-slide-in delay-1">
+        <FormSection title="Basic Information" icon="📝">
           <TextField
             label="Title"
             name="title"
             value={formData.title}
             onChange={handleInputChange}
-            placeholder="Enter blog post title"
+            placeholder="Enter title"
             required
             error={errors.title}
-            icon="✍️"
           />
+
           <RichTextEditor
             label="Content"
             value={formData.content}
             onChange={handleContentChange}
-            placeholder="Write your blog content here..."
             required
             error={errors.content}
           />
         </FormSection>
 
-        <FormSection title="Images" icon="🖼️" className="animate-slide-in delay-2">
+        <FormSection title="Images" icon="🖼️">
           <ImageUpload
             label="Content Images"
             images={formData.contentImages}
@@ -370,7 +323,7 @@ const CreateBlog = () => {
           />
         </FormSection>
 
-        <FormSection title="Attachments" icon="📎" className="animate-slide-in delay-3">
+        <FormSection title="Attachments" icon="📎">
           <FileUpload
             label="File Attachments"
             files={formData.attachments}
@@ -380,14 +333,15 @@ const CreateBlog = () => {
           />
         </FormSection>
 
-        <FormSection title="Tags" icon="🏷️" className="animate-slide-in delay-4">
+        <FormSection title="Tags" icon="🏷️">
           <div className="mb-3">
             <label className="form-label">Search and Add Tags</label>
+
             <div className="tag-input-container">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Type to search or create new tag..."
+                placeholder="Type to search or create"
                 value={tagInput}
                 onChange={(e) => {
                   setTagInput(e.target.value);
@@ -411,20 +365,22 @@ const CreateBlog = () => {
 
             {tagSearch && tags.length > 0 && (
               <div className="tag-suggestions">
-                {tags.filter(t => !formData.tags.some(ft => ft.id === t.id)).map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    className="tag-suggestion-item"
-                    onClick={() => {
-                      handleTagSelect(tag);
-                      setTagInput("");
-                      setTagSearch("");
-                    }}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+                {tags
+                  .filter((t) => !formData.tags.some((ft) => ft.id === t.id))
+                  .map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className="tag-suggestion-item"
+                      onClick={() => {
+                        handleTagSelect(tag);
+                        setTagInput("");
+                        setTagSearch("");
+                      }}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
               </div>
             )}
 
@@ -447,52 +403,48 @@ const CreateBlog = () => {
           </div>
         </FormSection>
 
-        <FormSection title="Advanced Options" icon="⚙️" className="animate-slide-in delay-5">
-          <div className="mb-3">
-            <label className="form-label">Comments</label>
-            <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="restrictedComments"
-                name="restrictedComments"
-                checked={formData.restrictedComments}
-                onChange={handleInputChange}
-              />
-              <label className="form-check-label" htmlFor="restrictedComments">
-                Restricted Comments
-              </label>
-            </div>
+        <FormSection title="Advanced Options" icon="⚙️">
+          <div className="form-check mb-3">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="restrictedComments"
+              name="restrictedComments"
+              checked={formData.restrictedComments}
+              onChange={handleInputChange}
+            />
+            <label className="form-check-label" htmlFor="restrictedComments">
+              Restricted Comments
+            </label>
           </div>
 
-          <div className="mb-3">
-            <label className="form-label">Place Blog</label>
-            <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="isPlaceBlog"
-                name="isPlaceBlog"
-                checked={formData.isPlaceBlog}
-                onChange={handleInputChange}
-              />
-              <label className="form-check-label" htmlFor="isPlaceBlog">
-                A Place's Blog: Use a place's blog to reach specific audience
-              </label>
-            </div>
+          <div className="form-check mb-3">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="isPlaceBlog"
+              name="isPlaceBlog"
+              checked={formData.isPlaceBlog}
+              onChange={handleInputChange}
+            />
+            <label className="form-check-label" htmlFor="isPlaceBlog">
+              Place Blog
+            </label>
           </div>
 
           {formData.isPlaceBlog && (
-            <div className="place-field fade-in">
+            <div className="fade-in">
               <SelectField
                 label="Select Place"
                 name="placeId"
                 value={formData.placeId}
                 onChange={handleInputChange}
-                options={places.map(place => ({ value: place.id, label: place.name }))}
+                options={places.map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                }))}
                 required
                 error={errors.placeId}
-                placeholder="Select a place..."
               />
             </div>
           )}
