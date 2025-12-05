@@ -1,0 +1,17 @@
+1.NEVER use Bolt Database or Supabase for any data storage.
+2 Always use React for frontend and Node.js for backend.
+3 Backend must use PostgreSQL only as the database.
+4 All README files must always be stored inside the /READMEs folder only.
+5 Frontend UI must follow brand colors (#000000 max 30%, #0071e3 max 10%, #f5f5f7 minimum 60%).
+6 All frontend pages must be modern, compact, clean, and fully responsive on desktop, tablet, and mobile.
+7 All backend API URLs must be read from the environment variable VITE_API_BASE_URL (no hard-coded URLs).
+8 Frontend must follow a component-based structure: /components, /pages, /layouts, /hooks, /context, /services, /utils.
+9 All API calls from the frontend must be done through a single centralized HTTP wrapper inside /services/http.service.js.
+10 Each API entity (Spaces, News, Auth, Users, etc.) must have its own API module inside /services/ (e.g., spaces.api.js, news.api.js).
+11 Frontend must support runtime environment variables using public/env.js and read values using window.__ENV.*.
+12 Backend must follow clean layering: /routes → /controllers → /services → /models → /config.
+13 All backend routes must follow REST standards and begin with /api/....
+14 Backend must store database config, environment loader, and logger inside /config.
+15 SQL queries or Prisma models must be organized inside /models.
+16 Backend must contain /middlewares for authentication, validation, and error handling.
+17 Project folder structure must follow: frontend/, backend/, READMEs/, scripts/, migrations/, config/.
