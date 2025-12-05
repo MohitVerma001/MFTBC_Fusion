@@ -5,20 +5,32 @@ import "./News.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const NAVIGATION_TABS = [
+  "News", "HR", "IT", "Cross Functions", "Activity",
+  "Content", "People", "Spaces", "Calendar", "CEO Message", "More"
+];
+
+const CATEGORY_COLORS = {
+  Achievement: "#E60000",
+  Manufacturing: "#E60000",
+  Operations: "#E60000",
+  HR: "#E60000",
+  Sustainability: "#00A859",
+  Leadership: "#1E3A8A",
+  Expansion: "#DC2626",
+  IT: "#DC2626"
+};
+
 const News = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({});
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
-    tags: searchParams.get('tags') || '',
-    authorId: searchParams.get('authorId') || '',
-    from: searchParams.get('from') || '',
-    to: searchParams.get('to') || '',
-    page: parseInt(searchParams.get('page')) || 1,
-  });
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [selectedAuthor, setSelectedAuthor] = useState(searchParams.get('authorId') || '');
+  const [selectedTime, setSelectedTime] = useState(searchParams.get('time') || '');
+  const [activeTab, setActiveTab] = useState('News');
+  const [page, setPage] = useState(parseInt(searchParams.get('page')) || 1);
 
   const navigate = useNavigate();
 
@@ -32,15 +44,12 @@ const News = () => {
       const params = new URLSearchParams({
         publishTo: 'News',
         jiveFormat: 'true',
-        page: filters.page,
-        limit: 9,
+        page: page,
+        limit: 6,
       });
 
-      if (filters.search) params.append('search', filters.search);
-      if (filters.tags) params.append('tags', filters.tags);
-      if (filters.authorId) params.append('authorId', filters.authorId);
-      if (filters.from) params.append('from', filters.from);
-      if (filters.to) params.append('to', filters.to);
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedAuthor) params.append('authorId', selectedAuthor);
 
       const res = await fetch(`${API_URL}/blogs?${params.toString()}`);
       const data = await res.json();
@@ -57,89 +66,94 @@ const News = () => {
     setLoading(false);
   };
 
-  const handleSearchChange = (e) => {
-    setFilters(prev => ({ ...prev, search: e.target.value }));
-  };
-
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    updateURLParams({ ...filters, page: 1 });
+    updateURLParams({ search: searchQuery, page: 1 });
   };
 
-  const handleFilterChange = (field, value) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
-  };
-
-  const applyFilters = () => {
-    updateURLParams({ ...filters, page: 1 });
-    setShowFilters(false);
-  };
-
-  const handleTagClick = (tagName) => {
-    const newFilters = { ...filters, tags: tagName, page: 1 };
-    setFilters(newFilters);
-    updateURLParams(newFilters);
-  };
-
-  const clearFilters = () => {
-    const clearedFilters = { search: '', tags: '', authorId: '', from: '', to: '', page: 1 };
-    setFilters(clearedFilters);
-    updateURLParams(clearedFilters);
+  const updateURLParams = (newParams) => {
+    const params = new URLSearchParams();
+    if (newParams.search) params.set('search', newParams.search);
+    if (newParams.authorId) params.set('authorId', newParams.authorId);
+    if (newParams.time) params.set('time', newParams.time);
+    if (newParams.page > 1) params.set('page', newParams.page);
+    setSearchParams(params);
   };
 
   const handlePageChange = (newPage) => {
-    const newFilters = { ...filters, page: newPage };
-    setFilters(newFilters);
-    updateURLParams(newFilters);
+    setPage(newPage);
+    updateURLParams({ search: searchQuery, authorId: selectedAuthor, time: selectedTime, page: newPage });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const updateURLParams = (newFilters) => {
-    const params = new URLSearchParams();
-    if (newFilters.search) params.set('search', newFilters.search);
-    if (newFilters.tags) params.set('tags', newFilters.tags);
-    if (newFilters.authorId) params.set('authorId', newFilters.authorId);
-    if (newFilters.from) params.set('from', newFilters.from);
-    if (newFilters.to) params.set('to', newFilters.to);
-    if (newFilters.page > 1) params.set('page', newFilters.page);
-    setSearchParams(params);
   };
 
   const handleArticleClick = (articleId) => {
     navigate(`/news/${articleId}`);
   };
 
-  const hasActiveFilters = filters.search || filters.tags || filters.authorId || filters.from || filters.to;
+  const getCategoryFromTags = (tags) => {
+    if (!tags || tags.length === 0) return "News";
+    const firstTag = tags[0];
+    return firstTag;
+  };
+
+  const getCategoryColor = (category) => {
+    return CATEGORY_COLORS[category] || "#E60000";
+  };
+
+  const getTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} hour${minutes > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 604800) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
 
   if (loading) return <div className="loading-text">Loading News...</div>;
 
   return (
-    <div className="news-page">
-      <section className="news-header">
-        <div className="container">
-          <div className="header-top">
-            <h1 className="news-page-title">MFTBC News</h1>
-            <button
-              className="filter-toggle-btn"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="4" y1="21" x2="4" y2="14"></line>
-                <line x1="4" y1="10" x2="4" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12" y2="3"></line>
-                <line x1="20" y1="21" x2="20" y2="16"></line>
-                <line x1="20" y1="12" x2="20" y2="3"></line>
-                <line x1="1" y1="14" x2="7" y2="14"></line>
-                <line x1="9" y1="8" x2="15" y2="8"></line>
-                <line x1="17" y1="16" x2="23" y2="16"></line>
-              </svg>
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </button>
-          </div>
+    <div className="news-page-redesign">
+      <section className="news-hero-section">
+        <div className="news-hero-overlay"></div>
+        <div className="news-hero-content">
+          <h1 className="news-hero-title">MFTBC News</h1>
+          <p className="news-hero-subtitle">
+            Stay informed with official updates, internal announcements,<br />
+            achievements, and cross-location highlights from FUSO.
+          </p>
+        </div>
+      </section>
 
-          <form onSubmit={handleSearchSubmit} className="news-search-form">
-            <div className="search-box-enhanced">
+      <section className="news-navigation-section">
+        <div className="container">
+          <div className="news-tabs">
+            {NAVIGATION_TABS.map((tab) => (
+              <button
+                key={tab}
+                className={`news-tab ${activeTab === tab ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="news-search-section">
+        <div className="container">
+          <div className="news-filters-bar">
+            <div className="news-search-input-group">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.35-4.35"></path>
@@ -147,231 +161,145 @@ const News = () => {
               <input
                 type="text"
                 placeholder="Search news articles..."
-                value={filters.search}
-                onChange={handleSearchChange}
-                className="search-input-enhanced"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
+                className="news-search-input"
               />
-              <button type="submit" className="search-btn-enhanced">Search</button>
             </div>
-          </form>
 
-          {showFilters && (
-            <div className="advanced-filters">
-              <div className="filters-grid">
-                <div className="filter-group">
-                  <label className="filter-label">Tag</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Manufacturing"
-                    value={filters.tags}
-                    onChange={(e) => handleFilterChange('tags', e.target.value)}
-                    className="filter-input"
-                  />
-                </div>
-
-                <div className="filter-group">
-                  <label className="filter-label">Author ID</label>
-                  <input
-                    type="number"
-                    placeholder="e.g., 1"
-                    value={filters.authorId}
-                    onChange={(e) => handleFilterChange('authorId', e.target.value)}
-                    className="filter-input"
-                  />
-                </div>
-
-                <div className="filter-group">
-                  <label className="filter-label">From Date</label>
-                  <input
-                    type="date"
-                    value={filters.from}
-                    onChange={(e) => handleFilterChange('from', e.target.value)}
-                    className="filter-input"
-                  />
-                </div>
-
-                <div className="filter-group">
-                  <label className="filter-label">To Date</label>
-                  <input
-                    type="date"
-                    value={filters.to}
-                    onChange={(e) => handleFilterChange('to', e.target.value)}
-                    className="filter-input"
-                  />
-                </div>
+            <div className="news-filter-dropdowns">
+              <div className="news-filter-dropdown">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <select
+                  value={selectedAuthor}
+                  onChange={(e) => {
+                    setSelectedAuthor(e.target.value);
+                    updateURLParams({ search: searchQuery, authorId: e.target.value, time: selectedTime, page: 1 });
+                  }}
+                  className="news-filter-select"
+                >
+                  <option value="">All Authors</option>
+                </select>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="dropdown-arrow">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
               </div>
 
-              <div className="filter-actions">
-                <button type="button" onClick={applyFilters} className="btn-apply-filters">
-                  Apply Filters
-                </button>
-                <button type="button" onClick={clearFilters} className="btn-clear-filters">
-                  Clear All
-                </button>
+              <div className="news-filter-dropdown">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <select
+                  value={selectedTime}
+                  onChange={(e) => {
+                    setSelectedTime(e.target.value);
+                    updateURLParams({ search: searchQuery, authorId: selectedAuthor, time: e.target.value, page: 1 });
+                  }}
+                  className="news-filter-select"
+                >
+                  <option value="">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="dropdown-arrow">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
               </div>
             </div>
-          )}
-
-          {hasActiveFilters && (
-            <div className="active-filters">
-              {filters.search && (
-                <span className="filter-tag">
-                  Search: {filters.search}
-                  <button onClick={() => {
-                    setFilters(prev => ({ ...prev, search: '', page: 1 }));
-                    updateURLParams({ ...filters, search: '', page: 1 });
-                  }}>×</button>
-                </span>
-              )}
-              {filters.tags && (
-                <span className="filter-tag">
-                  Tag: {filters.tags}
-                  <button onClick={() => {
-                    setFilters(prev => ({ ...prev, tags: '', page: 1 }));
-                    updateURLParams({ ...filters, tags: '', page: 1 });
-                  }}>×</button>
-                </span>
-              )}
-              {filters.authorId && (
-                <span className="filter-tag">
-                  Author ID: {filters.authorId}
-                  <button onClick={() => {
-                    setFilters(prev => ({ ...prev, authorId: '', page: 1 }));
-                    updateURLParams({ ...filters, authorId: '', page: 1 });
-                  }}>×</button>
-                </span>
-              )}
-              {filters.from && (
-                <span className="filter-tag">
-                  From: {new Date(filters.from).toLocaleDateString()}
-                  <button onClick={() => {
-                    setFilters(prev => ({ ...prev, from: '', page: 1 }));
-                    updateURLParams({ ...filters, from: '', page: 1 });
-                  }}>×</button>
-                </span>
-              )}
-              {filters.to && (
-                <span className="filter-tag">
-                  To: {new Date(filters.to).toLocaleDateString()}
-                  <button onClick={() => {
-                    setFilters(prev => ({ ...prev, to: '', page: 1 }));
-                    updateURLParams({ ...filters, to: '', page: 1 });
-                  }}>×</button>
-                </span>
-              )}
-            </div>
-          )}
-
-          {pagination.totalItems > 0 && (
-            <p className="results-count">
-              Showing {articles.length} of {pagination.totalItems} articles
-              {pagination.totalPages > 1 && ` • Page ${pagination.currentPage} of ${pagination.totalPages}`}
-            </p>
-          )}
+          </div>
         </div>
       </section>
 
-      <section className="news-content">
+      <section className="news-articles-section">
         <div className="container">
           {articles.length === 0 ? (
-            <div className="no-results">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
-                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                <line x1="15" y1="9" x2="15.01" y2="9"></line>
-              </svg>
-              <h3>No articles found</h3>
-              <p>Try adjusting your search or filters to find what you're looking for.</p>
-              {hasActiveFilters && (
-                <button onClick={clearFilters} className="btn-primary">
-                  Clear All Filters
-                </button>
-              )}
+            <div className="news-no-results">
+              <p>No articles found</p>
             </div>
           ) : (
             <>
-              <div className="row g-4">
+              <div className="news-grid">
                 {articles.map((article) => {
                   const bannerImage = article.contentImages?.length
                     ? article.contentImages[0].ref
                     : "/placeholder-news.png";
 
+                  const category = getCategoryFromTags(article.tags);
+                  const categoryColor = getCategoryColor(category);
+
                   return (
-                    <div key={article.id} className="col-12 col-md-6 col-lg-4">
-                      <div
-                        className="news-article-card"
-                        onClick={() => handleArticleClick(article.id)}
-                      >
-                        <div className="article-image-wrapper">
-                          <img
-                            src={bannerImage}
-                            alt={article.subject}
-                            className="article-image"
-                            onError={(e) => {
-                              e.target.src = "/placeholder-news.png";
-                            }}
-                          />
-                          <span className="article-category red">News</span>
-                        </div>
+                    <div key={article.id} className="news-card" onClick={() => handleArticleClick(article.id)}>
+                      <div className="news-card-image-wrapper">
+                        <img
+                          src={bannerImage}
+                          alt={article.subject}
+                          className="news-card-image"
+                          onError={(e) => {
+                            e.target.src = "/placeholder-news.png";
+                          }}
+                        />
+                        <span className="news-card-badge" style={{ backgroundColor: categoryColor }}>
+                          {category}
+                        </span>
+                      </div>
 
-                        <div className="article-content">
-                          <h3 className="article-title">{article.subject}</h3>
+                      <div className="news-card-content">
+                        <h3 className="news-card-title">{article.subject}</h3>
 
-                          <p
-                            className="article-description"
-                            dangerouslySetInnerHTML={{
-                              __html: article.content.text
-                                .replace(/<[^>]*>/g, "")
-                                .substring(0, 150) + "..."
-                            }}
-                          ></p>
+                        <p
+                          className="news-card-description"
+                          dangerouslySetInnerHTML={{
+                            __html: article.content.text
+                              .replace(/<[^>]*>/g, "")
+                              .substring(0, 120) + "..."
+                          }}
+                        ></p>
 
-                          {article.tags && article.tags.length > 0 && (
-                            <div className="article-tags">
-                              {article.tags.slice(0, 3).map((tag, idx) => (
-                                <span
-                                  key={idx}
-                                  className="article-tag"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTagClick(tag);
-                                  }}
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                              {article.tags.length > 3 && (
-                                <span className="article-tag-more">
-                                  +{article.tags.length - 3} more
-                                </span>
-                              )}
+                        <div className="news-card-footer">
+                          <div className="news-card-author">
+                            <div className="news-author-avatar">
+                              {article.author.displayName[0]}
                             </div>
-                          )}
-
-                          <div className="article-footer">
-                            <div className="article-author">
-                              <div className="author-avatar">
-                                {article.author.displayName[0]}
+                            <div className="news-author-info">
+                              <div className="news-author-name">
+                                {article.author.displayName}
                               </div>
-                              <div className="author-info">
-                                <div className="author-name">
-                                  {article.author.displayName}
-                                </div>
-                                <div className="author-role">
-                                  {new Date(article.published).toLocaleDateString()}
-                                </div>
+                              <div className="news-author-role">
+                                {article.author.jobTitle || "FUSO Employee"}
                               </div>
                             </div>
+                          </div>
 
-                            <div
-                              className="article-actions"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <LikeButton
-                                blogId={article.id}
-                                initialLikeCount={article.likeCount}
-                              />
+                          <div className="news-card-meta">
+                            <div className="news-card-time">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                              </svg>
+                              {getTimeAgo(article.published)}
+                            </div>
+
+                            <div className="news-card-stats">
+                              <div className="news-stat-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                                <span>{article.likeCount || 0}</span>
+                              </div>
+
+                              <div className="news-stat-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                <span>{article.commentCount || 0}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -382,9 +310,9 @@ const News = () => {
               </div>
 
               {pagination.totalPages > 1 && (
-                <div className="pagination">
+                <div className="news-pagination">
                   <button
-                    className="pagination-btn"
+                    className="news-pagination-btn"
                     disabled={pagination.currentPage === 1}
                     onClick={() => handlePageChange(pagination.currentPage - 1)}
                   >
@@ -394,35 +322,47 @@ const News = () => {
                     Previous
                   </button>
 
-                  <div className="pagination-numbers">
-                    {Array.from({ length: Math.min(pagination.totalPages, 7) }, (_, i) => {
-                      let page;
-                      if (pagination.totalPages <= 7) {
-                        page = i + 1;
-                      } else if (pagination.currentPage <= 4) {
-                        page = i + 1;
-                      } else if (pagination.currentPage >= pagination.totalPages - 3) {
-                        page = pagination.totalPages - 6 + i;
+                  <div className="news-pagination-numbers">
+                    {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
                       } else {
-                        page = pagination.currentPage - 3 + i;
+                        pageNum = pagination.currentPage - 2 + i;
                       }
 
                       return (
                         <button
-                          key={page}
-                          className={`pagination-number ${
-                            page === pagination.currentPage ? "active" : ""
+                          key={pageNum}
+                          className={`news-pagination-number ${
+                            pageNum === pagination.currentPage ? "active" : ""
                           }`}
-                          onClick={() => handlePageChange(page)}
+                          onClick={() => handlePageChange(pageNum)}
                         >
-                          {page}
+                          {pageNum}
                         </button>
                       );
                     })}
+
+                    {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
+                      <>
+                        <span className="news-pagination-dots">...</span>
+                        <button
+                          className="news-pagination-number"
+                          onClick={() => handlePageChange(pagination.totalPages)}
+                        >
+                          {pagination.totalPages}
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   <button
-                    className="pagination-btn"
+                    className="news-pagination-btn"
                     disabled={pagination.currentPage === pagination.totalPages}
                     onClick={() => handlePageChange(pagination.currentPage + 1)}
                   >

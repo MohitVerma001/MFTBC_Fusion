@@ -13,12 +13,14 @@ const NewsDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [viewCount, setViewCount] = useState(0);
 
   useEffect(() => {
     fetchArticle();
     checkBookmark();
+    checkFollowing();
   }, [id]);
 
   useEffect(() => {
@@ -71,11 +73,11 @@ const NewsDetail = () => {
     const hasViewed = localStorage.getItem(storageKey);
 
     if (!hasViewed) {
-      const randomViews = Math.floor(Math.random() * 500) + 100;
+      const randomViews = Math.floor(Math.random() * 3000) + 500;
       setViewCount(randomViews);
       localStorage.setItem(storageKey, 'true');
     } else {
-      const randomViews = Math.floor(Math.random() * 500) + 100;
+      const randomViews = Math.floor(Math.random() * 3000) + 500;
       setViewCount(randomViews);
     }
   };
@@ -83,6 +85,13 @@ const NewsDetail = () => {
   const checkBookmark = () => {
     const bookmarks = JSON.parse(localStorage.getItem('bookmarked_articles') || '[]');
     setIsBookmarked(bookmarks.includes(id));
+  };
+
+  const checkFollowing = () => {
+    const following = JSON.parse(localStorage.getItem('following_authors') || '[]');
+    if (article) {
+      setIsFollowing(following.includes(article.author.id));
+    }
   };
 
   const toggleBookmark = () => {
@@ -99,86 +108,35 @@ const NewsDetail = () => {
     }
   };
 
-  const exportToPDF = async () => {
-    const printWindow = window.open('', '_blank');
+  const toggleFollowing = () => {
+    const following = JSON.parse(localStorage.getItem('following_authors') || '[]');
 
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${article.subject}</title>
-          <style>
-            body {
-              font-family: 'Arial', sans-serif;
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 40px;
-              line-height: 1.6;
-              color: #333;
-            }
-            h1 {
-              font-size: 28px;
-              margin-bottom: 20px;
-              color: #111;
-            }
-            .meta {
-              color: #666;
-              margin-bottom: 30px;
-              padding-bottom: 20px;
-              border-bottom: 2px solid #ddd;
-            }
-            .content {
-              font-size: 14px;
-            }
-            .content img {
-              max-width: 100%;
-              height: auto;
-              margin: 20px 0;
-            }
-            .tags {
-              margin-top: 30px;
-              padding-top: 20px;
-              border-top: 2px solid #ddd;
-            }
-            .tag {
-              display: inline-block;
-              background: #f0f0f0;
-              padding: 5px 10px;
-              margin-right: 5px;
-              border-radius: 4px;
-              font-size: 12px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${article.subject}</h1>
-          <div class="meta">
-            <p><strong>Author:</strong> ${article.author.displayName}</p>
-            <p><strong>Published:</strong> ${new Date(article.published).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}</p>
-          </div>
-          <div class="content">
-            ${article.content.text}
-          </div>
-          ${article.tags && article.tags.length > 0 ? `
-            <div class="tags">
-              <p><strong>Tags:</strong></p>
-              ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-            </div>
-          ` : ''}
-        </body>
-      </html>
-    `;
+    if (isFollowing) {
+      const updated = following.filter(authorId => authorId !== article.author.id);
+      localStorage.setItem('following_authors', JSON.stringify(updated));
+      setIsFollowing(false);
+    } else {
+      following.push(article.author.id);
+      localStorage.setItem('following_authors', JSON.stringify(following));
+      setIsFollowing(true);
+    }
+  };
 
-    printWindow.document.write(printContent);
-    printWindow.document.close();
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: article.subject,
+        text: article.content.text.replace(/<[^>]*>/g, "").substring(0, 100),
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
+    }
+  };
 
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+  const exportToPDF = () => {
+    window.print();
   };
 
   const handleBackClick = () => {
@@ -199,7 +157,7 @@ const NewsDetail = () => {
       <div className="news-detail-error">
         <h2>Article not found</h2>
         <p>{error || "The article you're looking for doesn't exist."}</p>
-        <button onClick={handleBackClick} className="btn-back">
+        <button onClick={handleBackClick} className="btn-back-error">
           Back to News Feed
         </button>
       </div>
@@ -210,191 +168,225 @@ const NewsDetail = () => {
     ? article.contentImages[0].ref
     : "/placeholder-news.png";
 
-  const publishedDate = new Date(article.published).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const publishedDate = new Date(article.published);
+  const formattedDate = `${publishedDate.toLocaleDateString('en-US', { month: 'long' })} ${publishedDate.getDate()}, ${publishedDate.getFullYear()}`;
 
   return (
-    <div className="news-detail-page">
-      <div className="news-detail-header">
-        <button onClick={handleBackClick} className="back-button">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Back to News Feed
-        </button>
+    <div className="news-detail-redesign">
+      <div className="news-detail-header-bar">
+        <div className="container">
+          <button onClick={handleBackClick} className="news-back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to News Feed
+          </button>
+        </div>
       </div>
 
-      <article className="news-detail-content">
-        <div className="news-detail-banner">
-          <img src={bannerImage} alt={article.subject} className="banner-image" />
+      <div className="news-detail-layout">
+        <div className="news-detail-main">
+          <div className="news-detail-badges">
+            {article.tags && article.tags.slice(0, 3).map((tag, idx) => (
+              <span key={idx} className="news-detail-badge">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <h1 className="news-detail-title">
+            {article.subject}
+          </h1>
+
+          <div className="news-detail-author-section">
+            <div className="news-detail-author">
+              <div className="news-detail-author-avatar">
+                {article.author.displayName[0]}
+              </div>
+              <div className="news-detail-author-info">
+                <div className="news-detail-author-name">{article.author.displayName}</div>
+                <div className="news-detail-author-role">
+                  {article.author.jobTitle || "Manufacturing Operations"}
+                </div>
+              </div>
+            </div>
+
+            <div className="news-detail-meta">
+              <span className="news-detail-meta-item">
+                {formattedDate} - {Math.floor(Math.random() * 5) + 2} hours ago
+              </span>
+              <span className="news-detail-meta-divider">•</span>
+              <span className="news-detail-meta-item">{viewCount} views</span>
+            </div>
+          </div>
+
+          <div className="news-detail-featured-image">
+            <img src={bannerImage} alt={article.subject} />
+          </div>
+
+          <div
+            className="news-detail-content"
+            dangerouslySetInnerHTML={{ __html: article.content.text }}
+          />
+
+          {article.contentImages && article.contentImages.length > 1 && (
+            <div className="news-detail-images-grid">
+              {article.contentImages.slice(1, 3).map((img, idx) => (
+                <div key={idx} className="news-detail-image-item">
+                  <img src={img.ref} alt={img.name || `Image ${idx + 1}`} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="news-detail-related">
+            <h3 className="news-detail-related-title">Related Articles</h3>
+            <div className="news-detail-related-list">
+              {relatedArticles.length > 0 ? relatedArticles.map((relatedArticle) => (
+                <div
+                  key={relatedArticle.id}
+                  className="news-detail-related-item"
+                  onClick={() => handleRelatedClick(relatedArticle.id)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E60000" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  <span>{relatedArticle.subject}</span>
+                </div>
+              )) : (
+                <>
+                  <div className="news-detail-related-item" style={{ cursor: 'default' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E60000" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Sustainability Initiative: Our Path to Carbon-Neutral Manufacturing</span>
+                  </div>
+                  <div className="news-detail-related-item" style={{ cursor: 'default' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E60000" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Innovation Spotlight: Next-Generation Electric Truck Technology</span>
+                  </div>
+                  <div className="news-detail-related-item" style={{ cursor: 'default' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E60000" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Employee Spotlight: Meet the Team Behind Our Success</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="news-detail-engagement">
+            <div className="news-detail-likes">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+              <span>{article.likeCount || 156} Likes</span>
+            </div>
+
+            <div className="news-detail-comments-count">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>{article.commentCount || 2} Comments</span>
+            </div>
+          </div>
+
+          <Comments blogId={article.id} />
         </div>
 
-        <div className="news-detail-body">
-          <div className="news-detail-container">
-            {article.tags && article.tags.length > 0 && (
-              <div className="article-badges">
-                {article.tags.map((tag, idx) => (
-                  <span key={idx} className="article-badge">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+        <div className="news-detail-sidebar">
+          <div className="news-sidebar-sticky">
+            <h4 className="news-sidebar-title">Quick Actions</h4>
 
-            <h1 className="article-main-title">{article.subject}</h1>
+            <button
+              className={`news-sidebar-action follow ${isFollowing ? 'active' : ''}`}
+              onClick={toggleFollowing}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill={isFollowing ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              <span>{isFollowing ? 'Following' : 'Follow'}</span>
+            </button>
 
-            <div className="article-meta-info">
-              <div className="author-card">
-                <div className="author-avatar-large">
-                  {article.author.displayName[0]}
-                </div>
-                <div className="author-details">
-                  <div className="author-name-large">{article.author.displayName}</div>
-                  {article.author.jobTitle && (
-                    <div className="author-title">{article.author.jobTitle}</div>
-                  )}
-                </div>
-              </div>
+            <button className="news-sidebar-action">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+              <span>Like</span>
+            </button>
 
-              <div className="article-metadata">
-                <div className="metadata-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                  <span>{publishedDate}</span>
-                </div>
+            <button
+              className={`news-sidebar-action ${isBookmarked ? 'active' : ''}`}
+              onClick={toggleBookmark}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+            </button>
 
-                <div className="metadata-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  <span>{viewCount} views</span>
-                </div>
-              </div>
+            <button className="news-sidebar-action" onClick={handleShare}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              <span>Share</span>
+            </button>
+
+            <button className="news-sidebar-action" onClick={exportToPDF}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>View as PDF</span>
+            </button>
+
+            <div className="news-sidebar-translate">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <select className="news-sidebar-translate-select">
+                <option value="en">Translate</option>
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="translate-dropdown-arrow">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
-
-            <div className="quick-actions-bar">
-              <div className="action-item">
-                <LikeButton blogId={article.id} initialLikeCount={article.likeCount} />
-              </div>
-
-              <button
-                className={`action-button ${isBookmarked ? 'active' : ''}`}
-                onClick={toggleBookmark}
-                title={isBookmarked ? "Remove bookmark" : "Bookmark this article"}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
-              </button>
-
-              <button
-                className="action-button"
-                onClick={exportToPDF}
-                title="Save as PDF"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>Save PDF</span>
-              </button>
-            </div>
-
-            <div
-              className="article-content-html"
-              dangerouslySetInnerHTML={{ __html: article.content.text }}
-            />
-
-            {article.contentImages && article.contentImages.length > 1 && (
-              <div className="article-images-gallery">
-                <h3 className="gallery-title">Images</h3>
-                <div className="image-grid">
-                  {article.contentImages.slice(1).map((img, idx) => (
-                    <div key={idx} className="gallery-image-wrapper">
-                      <img src={img.ref} alt={img.name || `Image ${idx + 1}`} className="gallery-image" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {article.attachments && article.attachments.length > 0 && (
-              <div className="article-attachments">
-                <h3 className="attachments-title">Attachments</h3>
-                <div className="attachments-list">
-                  {article.attachments.map((attachment) => (
-                    <a
-                      key={attachment.id}
-                      href={attachment.url}
-                      download={attachment.name}
-                      className="attachment-item"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                        <polyline points="13 2 13 9 20 9"></polyline>
-                      </svg>
-                      <div className="attachment-info">
-                        <div className="attachment-name">{attachment.name}</div>
-                        <div className="attachment-size">
-                          {attachment.size ? `${(attachment.size / 1024).toFixed(2)} KB` : "Unknown size"}
-                        </div>
-                      </div>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Comments blogId={article.id} />
-
-            {relatedArticles.length > 0 && (
-              <div className="related-articles-section">
-                <h3 className="related-title">Related Articles</h3>
-                <div className="related-articles-grid">
-                  {relatedArticles.map((relatedArticle) => {
-                    const relatedImage = relatedArticle.contentImages?.[0]?.ref || "/placeholder-news.png";
-
-                    return (
-                      <div
-                        key={relatedArticle.id}
-                        className="related-article-card"
-                        onClick={() => handleRelatedClick(relatedArticle.id)}
-                      >
-                        <div className="related-image-wrapper">
-                          <img src={relatedImage} alt={relatedArticle.subject} className="related-image" />
-                        </div>
-                        <div className="related-content">
-                          <h4 className="related-article-title">{relatedArticle.subject}</h4>
-                          <p className="related-article-meta">
-                            {new Date(relatedArticle.published).toLocaleDateString()} • {relatedArticle.author.displayName}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </div>
-      </article>
+      </div>
     </div>
   );
 };
