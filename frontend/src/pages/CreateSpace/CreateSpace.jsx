@@ -1,48 +1,65 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../../components/Header/Header";
-import FormWrapper from "../../components/FormComponents/FormWrapper";
-import FormSection from "../../components/FormComponents/FormSection";
-import TextField from "../../components/FormComponents/TextField";
-import SelectField from "../../components/FormComponents/SelectField";
-import ImageUpload from "../../components/FormComponents/ImageUpload";
-import RichTextEditor from "../../components/FormComponents/RichTextEditor";
-import DateTimeField from "../../components/FormComponents/DateTimeField";
 import { spacesApi } from "../../services";
 import "./CreateSpace.css";
+
+const NAVIGATION_ITEMS = [
+  { id: "News", label: "News", icon: "📰" },
+  { id: "HR", label: "HR", icon: "👥" },
+  { id: "Activity", label: "Activity", icon: "⚡" },
+  { id: "Content", label: "Content", icon: "📚" },
+  { id: "IT", label: "IT", icon: "💻" },
+  { id: "People", label: "People", icon: "👤" },
+  { id: "Spaces", label: "Spaces", icon: "🌐" },
+  { id: "Calendar", label: "Calendar", icon: "📅" },
+  { id: "CEO Message", label: "CEO Message", icon: "💼" }
+];
 
 const CreateSpace = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
 
+  const [rootSpaces, setRootSpaces] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingSpace, setLoadingSpace] = useState(false);
+
   const [formData, setFormData] = useState({
+    parentSpaceId: "",
     name: "",
-    language: "English",
-    imageUrl: "",
     description: "",
+    navigationItems: [],
+    language: "en",
     visibility: "public",
-    scheduledAt: "",
     isPublished: true
   });
 
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [loadingSpace, setLoadingSpace] = useState(false);
-
-  const languageOptions = [
-    { value: "English", label: "English" },
-    { value: "Japanese", label: "日本語 (Japanese)" },
-    { value: "German", label: "Deutsch (German)" },
-    { value: "Spanish", label: "Español (Spanish)" },
-    { value: "French", label: "Français (French)" }
-  ];
 
   useEffect(() => {
+    loadRootSpaces();
     if (isEditMode) {
       loadSpace();
     }
   }, [id]);
+
+  const loadRootSpaces = async () => {
+    try {
+      const result = await spacesApi.getSubspaces('?is_root_space=true');
+      if (result.success) {
+        setRootSpaces(result.data || []);
+        if (result.data && result.data.length > 0 && !formData.parentSpaceId) {
+          const mftbc = result.data.find(s => s.name === 'MFTBC');
+          if (mftbc) {
+            setFormData(prev => ({ ...prev, parentSpaceId: mftbc.id }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading root spaces:", error);
+    }
+  };
 
   const loadSpace = async () => {
     try {
@@ -51,70 +68,54 @@ const CreateSpace = () => {
       if (result.success && result.data) {
         const space = result.data;
         setFormData({
+          parentSpaceId: space.parent_space_id || "",
           name: space.name || "",
-          language: space.language || "English",
-          imageUrl: space.image_url || "",
           description: space.description || "",
+          navigationItems: space.navigation_items || [],
+          language: space.language || "en",
           visibility: space.visibility || "public",
-          scheduledAt: space.scheduled_at || "",
           isPublished: space.is_published !== false
         });
       }
     } catch (error) {
       console.error("Error loading space:", error);
-      alert("Failed to load space data");
     } finally {
       setLoadingSpace(false);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value
     }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
-    }
+    setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
-  const handleDescriptionChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      description: value
-    }));
-    if (errors.description) {
-      setErrors(prev => ({ ...prev, description: "" }));
-    }
+  const toggleNavigationItem = (itemId) => {
+    setFormData(prev => {
+      const items = prev.navigationItems.includes(itemId)
+        ? prev.navigationItems.filter(id => id !== itemId)
+        : [...prev.navigationItems, itemId];
+      return { ...prev, navigationItems: items };
+    });
+    setErrors(prev => ({ ...prev, navigationItems: "" }));
   };
 
-  const handleImageUpload = (files) => {
-    if (files && files.length > 0) {
-      const imageUrl = files[0].url;
-      setFormData(prev => ({
-        ...prev,
-        imageUrl
-      }));
-    }
-  };
-
-  const handleImageRemove = () => {
-    setFormData(prev => ({
-      ...prev,
-      imageUrl: ""
-    }));
-  };
-
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Space name is required";
+    if (!formData.parentSpaceId) {
+      newErrors.parentSpaceId = "Parent Space is required";
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
+    if (!formData.name.trim()) {
+      newErrors.name = "Space Name is required";
+    }
+
+    if (formData.navigationItems.length === 0) {
+      newErrors.navigationItems = "Please select at least one navigation item";
     }
 
     setErrors(newErrors);
@@ -124,22 +125,20 @@ const CreateSpace = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validate()) return;
 
     try {
       setLoading(true);
 
       const payload = {
         name: formData.name,
-        language: formData.language,
-        image_url: formData.imageUrl,
         description: formData.description,
-        content_html: formData.description,
+        parent_space_id: formData.parentSpaceId,
+        navigation_items: formData.navigationItems,
+        language: formData.language,
         visibility: formData.visibility,
-        scheduled_at: formData.scheduledAt || null,
         is_published: formData.isPublished,
+        content_html: `<p>${formData.description || 'Welcome to ' + formData.name}</p>`,
         created_by: "00000000-0000-0000-0000-000000000001"
       };
 
@@ -151,8 +150,7 @@ const CreateSpace = () => {
       }
 
       if (result.success) {
-        alert(isEditMode ? "Space updated successfully!" : "Space created successfully!");
-        navigate("/my-spaces");
+        navigate("/spaces");
       } else {
         alert(result.message || "Failed to save space");
       }
@@ -165,19 +163,17 @@ const CreateSpace = () => {
   };
 
   const handleCancel = () => {
-    navigate("/my-spaces");
+    navigate("/spaces");
   };
 
   if (loadingSpace) {
     return (
       <>
         <Header />
-        <div className="create-space-page">
-          <div className="container py-5 text-center">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-            <p className="mt-3">Loading space data...</p>
+        <div className="create-space-container">
+          <div className="loading-state">
+            <div className="spinner-border text-danger" role="status"></div>
+            <p>Loading space data...</p>
           </div>
         </div>
       </>
@@ -187,134 +183,178 @@ const CreateSpace = () => {
   return (
     <>
       <Header />
-      <FormWrapper
-        title={isEditMode ? "Edit Space" : "Create New Space"}
-        subtitle={isEditMode ? "Update your space details" : "Create a collaborative space for your team"}
-      >
-        <form onSubmit={handleSubmit}>
-          <FormSection title="Basic Information" icon="📝">
-            <TextField
-              label="Space Name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Enter space name (e.g., MFTBC Japanese)"
-              required
-              error={errors.name}
-            />
+      <div className="create-space-container">
+        <div className="create-space-card">
+          <div className="card-header-custom">
+            <h1 className="page-title">{isEditMode ? 'Edit Space' : 'Create New Space'}</h1>
+            <p className="page-subtitle">Configure your collaborative workspace</p>
+          </div>
 
-            <SelectField
-              label="Language"
-              name="language"
-              value={formData.language}
-              onChange={handleInputChange}
-              options={languageOptions}
-              required
-            />
-          </FormSection>
-
-          <FormSection title="Visual Content" icon="🖼️">
-            <ImageUpload
-              label="Space Image"
-              onUpload={handleImageUpload}
-              onRemove={handleImageRemove}
-              existingImages={formData.imageUrl ? [{ url: formData.imageUrl, name: "Space Image" }] : []}
-              accept="image/*"
-              maxFiles={1}
-            />
-
-            <RichTextEditor
-              label="Description"
-              value={formData.description}
-              onChange={handleDescriptionChange}
-              placeholder="Provide a detailed description of this space..."
-              required
-              error={errors.description}
-            />
-          </FormSection>
-
-          <FormSection title="Visibility & Publishing" icon="👁️">
-            <div className="form-group">
-              <label className="form-label">Visibility</label>
-              <div className="visibility-options">
-                <label className="radio-option">
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value="public"
-                    checked={formData.visibility === "public"}
-                    onChange={handleInputChange}
-                  />
-                  <span className="radio-label">
-                    <strong>Public</strong>
-                    <small>Everyone can view this space</small>
-                  </span>
+          <form onSubmit={handleSubmit} className="space-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="parentSpaceId">
+                  Parent Space <span className="required">*</span>
                 </label>
-                <label className="radio-option">
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value="restricted"
-                    checked={formData.visibility === "restricted"}
-                    onChange={handleInputChange}
-                  />
-                  <span className="radio-label">
-                    <strong>Restricted</strong>
-                    <small>Only selected members can view</small>
-                  </span>
+                <select
+                  id="parentSpaceId"
+                  name="parentSpaceId"
+                  className={`form-control ${errors.parentSpaceId ? 'is-invalid' : ''}`}
+                  value={formData.parentSpaceId}
+                  onChange={handleChange}
+                >
+                  <option value="">Select Parent Space</option>
+                  {rootSpaces.map(space => (
+                    <option key={space.id} value={space.id}>
+                      {space.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.parentSpaceId && (
+                  <div className="error-feedback">{errors.parentSpaceId}</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="name">
+                  Space Name <span className="required">*</span>
                 </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                  placeholder="e.g., Marketing Team, Engineering Hub"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+                {errors.name && (
+                  <div className="error-feedback">{errors.name}</div>
+                )}
               </div>
             </div>
 
-            <DateTimeField
-              label="Schedule for Later"
-              name="scheduledAt"
-              value={formData.scheduledAt}
-              onChange={handleInputChange}
-              helpText="Leave empty to publish immediately"
-            />
-
-            <div className="form-check">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                id="isPublished"
-                name="isPublished"
-                checked={formData.isPublished}
-                onChange={handleInputChange}
+            <div className="form-group">
+              <label className="form-label" htmlFor="description">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                className="form-control"
+                placeholder="Brief description of this space..."
+                rows="3"
+                value={formData.description}
+                onChange={handleChange}
               />
-              <label className="form-check-label" htmlFor="isPublished">
-                Publish immediately
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Navigation Items <span className="required">*</span>
+              </label>
+              {errors.navigationItems && (
+                <div className="error-feedback mb-2">{errors.navigationItems}</div>
+              )}
+              <div className="navigation-grid">
+                {NAVIGATION_ITEMS.map(item => (
+                  <div
+                    key={item.id}
+                    className={`nav-checkbox-card ${formData.navigationItems.includes(item.id) ? 'selected' : ''}`}
+                    onClick={() => toggleNavigationItem(item.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      id={`nav-${item.id}`}
+                      checked={formData.navigationItems.includes(item.id)}
+                      onChange={() => {}}
+                      className="nav-checkbox-input"
+                    />
+                    <span className="nav-icon">{item.icon}</span>
+                    <span className="nav-label">{item.label}</span>
+                    {formData.navigationItems.includes(item.id) && (
+                      <span className="check-icon">✓</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="language">
+                  Language / 言語
+                </label>
+                <select
+                  id="language"
+                  name="language"
+                  className="form-control bilingual-select"
+                  value={formData.language}
+                  onChange={handleChange}
+                >
+                  <option value="en">English / 英語</option>
+                  <option value="ja">Japanese / 日本語</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="visibility">
+                  Visibility
+                </label>
+                <select
+                  id="visibility"
+                  name="visibility"
+                  className="form-control"
+                  value={formData.visibility}
+                  onChange={handleChange}
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                  <option value="restricted">Restricted</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="isPublished"
+                  checked={formData.isPublished}
+                  onChange={handleChange}
+                  className="form-checkbox"
+                />
+                <span>Publish this space immediately</span>
               </label>
             </div>
-          </FormSection>
 
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={handleCancel}
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary btn-submit"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  {isEditMode ? "Updating..." : "Creating..."}
-                </>
-              ) : (
-                isEditMode ? "Update Space" : "Create Space"
-              )}
-            </button>
-          </div>
-        </form>
-      </FormWrapper>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="btn btn-cancel"
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-submit"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2"></span>
+                    {isEditMode ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>{isEditMode ? 'Update Space' : 'Create Space'}</>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </>
   );
 };

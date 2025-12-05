@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../../components/Header/Header";
-import Footer from "../../components/Footer/Footer";
-import HeroSection from "../../components/HeroSection/HeroSection";
-import NavigationTabs from "../../components/NavigationTabs/NavigationTabs";
 import { spacesApi } from "../../services";
 import "./Spaces.css";
 
@@ -161,15 +157,6 @@ const Spaces = () => {
   };
 
   return (
-    <>
-      <Header />
-      <HeroSection
-        title="Spaces"
-        subtitle="Explore collaborative workspaces"
-        image="/div-34.png"
-      />
-      <NavigationTabs />
-
       <div className="spaces-page-container">
         <div className="page-container">
           <div className="spaces-page-header">
@@ -217,9 +204,6 @@ const Spaces = () => {
           )}
         </div>
       </div>
-
-      <Footer />
-    </>
   );
 };
 

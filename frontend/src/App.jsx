@@ -17,7 +17,7 @@ import CreateDiscussion from "./pages/CreateDiscussion/CreateDiscussion";
 import CreateSubSpace from "./pages/CreateSubSpace/CreateSubSpace";
 import CreateVideo from "./pages/CreateVideo/CreateVideo";
 import CreateCategory from "./pages/CreateCategory/CreateCategory";
-import CreateSpaceWizard from "./pages/CreateSpace/CreateSpaceWizard";
+import CreateSpace from "./pages/CreateSpace/CreateSpace";
 import MySpaces from "./pages/MySpaces/MySpaces";
 import MyContent from "./pages/MyContent/MyContent";
 import Spaces from "./pages/Spaces/Spaces";
@@ -85,7 +85,13 @@ const App = () => {
       case "/spaces":
         return {
           title: "Spaces",
-          subtitle: null,
+          subtitle: "Explore collaborative workspaces",
+          image: "/div-34.png"
+        };
+      case "/my-spaces":
+        return {
+          title: "My Spaces",
+          subtitle: "Manage your collaborative spaces",
           image: "/div-34.png"
         };
       case "/calendar":
@@ -146,8 +152,8 @@ const App = () => {
         <Route path="/create/subspace" element={<CreateSubSpace />} />
         <Route path="/create/video" element={<CreateVideo />} />
         <Route path="/create/category" element={<CreateCategory />} />
-        <Route path="/create/space" element={<CreateSpaceWizard />} />
-        <Route path="/create/space/:id" element={<CreateSpaceWizard />} />
+        <Route path="/create/space" element={<CreateSpace />} />
+        <Route path="/create/space/:id" element={<CreateSpace />} />
         <Route path="/my-spaces" element={<MySpaces />} />
         <Route path="/my-content" element={<MyContent />} />
         <Route path="*" element={<Navigate to="/" replace />} />
