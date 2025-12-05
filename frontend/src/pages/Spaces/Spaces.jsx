@@ -1,209 +1,241 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { spacesApi } from "../../services";
 import "./Spaces.css";
 
 const Spaces = () => {
+  const [searchText, setSearchText] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [sortBy, setSortBy] = useState("Latest Activity");
+  const [activeTab, setActiveTab] = useState("All Places");
+  const [viewMode, setViewMode] = useState("grid");
+  const [spaces, setSpaces] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
-  const [rootSpaces, setRootSpaces] = useState([]);
-  const [childSpaces, setChildSpaces] = useState({});
-  const [expandedSpaces, setExpandedSpaces] = useState(new Set());
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+
+  const demoSpaces = [
+    {
+      id: 1,
+      name: "Mitsubishi FUSO Truck and Bus Corporation",
+      description: "Based in Kawasaki, Japan, Mitsubishi Fuso Truck and Bus",
+      image: "/div-34.png",
+      followers: 542,
+      subSpaces: 4,
+      followed: false
+    },
+    {
+      id: 2,
+      name: "Mitsubishi FUSO Truck and Bus Corporation",
+      description: "Mitsubishi FUSO Truck and Bus Corporation (MFTBC), a 100% subsidiary",
+      image: "/div-34.png",
+      followers: 315,
+      subSpaces: 2,
+      followed: false
+    },
+    {
+      id: 3,
+      name: "Mitsubishi FUSO Truck and Bus Corporation",
+      description: "Welcome to the MFTBC ESG, your hub for all things Environmental, Social",
+      image: "/div-34.png",
+      followers: 47,
+      subSpaces: 0,
+      followed: false
+    }
+  ];
 
   useEffect(() => {
-    loadSpaces();
+    setSpaces(demoSpaces);
   }, []);
 
-  const loadSpaces = async () => {
-    try {
-      setLoading(true);
-
-      const rootResult = await spacesApi.getSubspaces('?is_root_space=true');
-      if (rootResult.success) {
-        const roots = rootResult.data || [];
-        setRootSpaces(roots);
-
-        const childData = {};
-        for (const root of roots) {
-          const childResult = await spacesApi.getSubspaces(`?parent_space_id=${root.id}`);
-          if (childResult.success) {
-            childData[root.id] = childResult.data || [];
-          }
-        }
-        setChildSpaces(childData);
-      }
-    } catch (error) {
-      console.error("Error loading spaces:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleFollowToggle = (spaceId) => {
+    setSpaces(spaces.map(space =>
+      space.id === spaceId
+        ? { ...space, followed: !space.followed, followers: space.followed ? space.followers - 1 : space.followers + 1 }
+        : space
+    ));
   };
 
-  const toggleSpaceExpand = (spaceId) => {
-    const newExpanded = new Set(expandedSpaces);
-    if (newExpanded.has(spaceId)) {
-      newExpanded.delete(spaceId);
+  const handleShare = (space) => {
+    if (navigator.share) {
+      navigator.share({
+        title: space.name,
+        text: space.description,
+        url: window.location.href
+      });
     } else {
-      newExpanded.add(spaceId);
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
     }
-    setExpandedSpaces(newExpanded);
-  };
-
-  const handleSpaceClick = (space) => {
-    navigate(`/space/${space.id}`);
-  };
-
-  const handleCreateSpace = () => {
-    navigate("/create/space");
-  };
-
-  const filterSpaces = (spaces) => {
-    if (!searchTerm) return spaces;
-    return spaces.filter(space =>
-      space.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      space.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  };
-
-  const renderNavigationBadges = (navigationItems) => {
-    if (!navigationItems || navigationItems.length === 0) return null;
-
-    const icons = {
-      "News": "📰",
-      "HR": "👥",
-      "Activity": "⚡",
-      "Content": "📚",
-      "IT": "💻",
-      "People": "👤",
-      "Spaces": "🌐",
-      "Calendar": "📅",
-      "CEO Message": "💼"
-    };
-
-    return (
-      <div className="nav-badges">
-        {navigationItems.slice(0, 5).map((item, idx) => (
-          <span key={idx} className="nav-badge" title={item}>
-            {icons[item] || "📌"}
-          </span>
-        ))}
-        {navigationItems.length > 5 && (
-          <span className="nav-badge more">+{navigationItems.length - 5}</span>
-        )}
-      </div>
-    );
-  };
-
-  const renderSpaceCard = (space, isChild = false) => {
-    const hasChildren = childSpaces[space.id] && childSpaces[space.id].length > 0;
-    const isExpanded = expandedSpaces.has(space.id);
-
-    return (
-      <div key={space.id} className={`space-card-wrapper ${isChild ? 'child-space' : 'root-space'}`}>
-        <div className="space-card">
-          <div className="space-card-main" onClick={() => handleSpaceClick(space)}>
-            {space.image_url && (
-              <div className="space-card-image">
-                <img src={space.image_url} alt={space.name} />
-              </div>
-            )}
-            <div className="space-card-content">
-              <div className="space-card-header">
-                <h3 className="space-card-title">
-                  {!isChild && <span className="root-badge">🌐</span>}
-                  {space.name}
-                </h3>
-                {space.is_root_space && (
-                  <span className="space-badge root">Root Space</span>
-                )}
-              </div>
-              <p className="space-card-description">
-                {space.description?.replace(/<[^>]*>/g, '').substring(0, 120)}
-                {space.description?.length > 120 && "..."}
-              </p>
-              {renderNavigationBadges(space.navigation_items)}
-              <div className="space-card-meta">
-                <span className="meta-tag">{space.language || "English"}</span>
-                <span className={`meta-tag ${space.visibility}`}>
-                  {space.visibility === "public" ? "🌐 Public" : "🔒 Restricted"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {hasChildren && !isChild && (
-            <button
-              className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleSpaceExpand(space.id);
-              }}
-            >
-              {isExpanded ? '▼' : '▶'} {childSpaces[space.id].length} sub-space{childSpaces[space.id].length !== 1 ? 's' : ''}
-            </button>
-          )}
-        </div>
-
-        {hasChildren && isExpanded && (
-          <div className="child-spaces-container">
-            {filterSpaces(childSpaces[space.id]).map(childSpace =>
-              renderSpaceCard(childSpace, true)
-            )}
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
-      <div className="spaces-page-container">
-        <div className="page-container">
-          <div className="spaces-page-header">
-            <div className="search-section-new">
+    <div className="spaces-page">
+      <section className="spaces-hero-section">
+        <div className="spaces-hero-overlay"></div>
+        <div className="spaces-hero-content">
+          <h1 className="spaces-hero-title">Spaces</h1>
+          <p className="spaces-hero-subtitle">
+            Find and follow spaces that matter to your work and interests.
+          </p>
+        </div>
+      </section>
+
+      <section className="spaces-navigation-section">
+        <div className="container">
+          <div className="spaces-tabs">
+            {["News", "HR", "IT", "Cross Functions", "Activity", "Content", "People", "Spaces", "Calendar", "CEO Message", "More"].map((tab) => (
+              <button
+                key={tab}
+                className={`spaces-tab ${tab === "Spaces" ? 'active' : ''}`}
+                onClick={() => tab === "News" ? navigate("/news") : tab === "HR" ? navigate("/hr") : null}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="spaces-filters-section">
+        <div className="container">
+          <div className="spaces-filters-row">
+            <div className="spaces-search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
               <input
                 type="text"
-                className="search-input-new"
-                placeholder="Search spaces..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Type to filter by text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="spaces-search-input"
               />
             </div>
-            <button className="btn-create-new" onClick={handleCreateSpace}>
-              <span className="btn-icon">✨</span>
-              Create New Space
-            </button>
+
+            <div className="spaces-filter-dropdown">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+              </svg>
+              <select className="spaces-select">
+                <option>Select tags</option>
+                <option>Manufacturing</option>
+                <option>HR</option>
+                <option>IT</option>
+              </select>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="dropdown-arrow">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            <div className="spaces-filter-dropdown">
+              <select className="spaces-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option>Latest Activity</option>
+                <option>Most Followers</option>
+                <option>Alphabetical</option>
+              </select>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="dropdown-arrow">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="spaces-content-section">
+        <div className="container">
+          <div className="spaces-toolbar">
+            <div className="spaces-type-tabs">
+              <button
+                className={`spaces-type-tab ${activeTab === "All Places" ? 'active' : ''}`}
+                onClick={() => setActiveTab("All Places")}
+              >
+                All Places
+              </button>
+              <button
+                className={`spaces-type-tab ${activeTab === "Spaces" ? 'active' : ''}`}
+                onClick={() => setActiveTab("Spaces")}
+              >
+                Spaces
+              </button>
+              <button
+                className={`spaces-type-tab ${activeTab === "Projects" ? 'active' : ''}`}
+                onClick={() => setActiveTab("Projects")}
+              >
+                Projects
+              </button>
+            </div>
+
+            <div className="spaces-view-toggle">
+              <button
+                className={`view-toggle-btn ${viewMode === "grid" ? 'active' : ''}`}
+                onClick={() => setViewMode("grid")}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                  <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                </svg>
+              </button>
+              <button
+                className={`view-toggle-btn ${viewMode === "list" ? 'active' : ''}`}
+                onClick={() => setViewMode("list")}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {loading ? (
-            <div className="loading-container-new">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
+          <div className={`spaces-grid ${viewMode === "list" ? 'list-view' : ''}`}>
+            {spaces.map((space) => (
+              <div key={space.id} className="space-card">
+                <div className="space-card-image">
+                  <img src={space.image} alt={space.name} />
+                  <button
+                    className={`space-follow-btn ${space.followed ? 'following' : ''}`}
+                    onClick={() => handleFollowToggle(space.id)}
+                  >
+                    {space.followed ? 'Following' : '+ Follow'}
+                  </button>
+                </div>
+                <div className="space-card-content">
+                  <h3 className="space-card-title">{space.name}</h3>
+                  <p className="space-card-description">{space.description}</p>
+                  <div className="space-card-meta">
+                    <span className="space-meta-item">{space.followers} Followers</span>
+                    {space.subSpaces > 0 && (
+                      <>
+                        <span className="space-meta-divider">|</span>
+                        <span className="space-meta-item">{space.subSpaces} Sub-spaces</span>
+                      </>
+                    )}
+                  </div>
+                  <button className="space-share-btn" onClick={() => handleShare(space)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    Share
+                  </button>
+                </div>
               </div>
-              <p>Loading spaces...</p>
-            </div>
-          ) : filterSpaces(rootSpaces).length === 0 ? (
-            <div className="empty-state-new">
-              <div className="empty-icon-new">🌐</div>
-              <h3>No Spaces Found</h3>
-              <p>
-                {searchTerm
-                  ? "No spaces match your search criteria"
-                  : "No spaces available yet"}
-              </p>
-              {!searchTerm && (
-                <button className="btn-create-new" onClick={handleCreateSpace}>
-                  Create First Space
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="spaces-hierarchy">
-              {filterSpaces(rootSpaces).map(space => renderSpaceCard(space))}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+    </div>
   );
 };
 

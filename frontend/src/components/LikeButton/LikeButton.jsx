@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { blogsApi } from '../../services';
+import React, { useState, useEffect } from 'react';
+import { engagementApi } from '../../services/engagement.api';
 import './LikeButton.css';
 
 const LikeButton = ({ blogId, initialLikeCount = 0, initialLiked = false }) => {
@@ -7,15 +7,32 @@ const LikeButton = ({ blogId, initialLikeCount = 0, initialLiked = false }) => {
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const loadLikeStatus = async () => {
+      const [likeStatus, countResult] = await Promise.all([
+        engagementApi.checkUserLiked(blogId),
+        engagementApi.getLikeCount(blogId)
+      ]);
+
+      if (likeStatus.success) {
+        setLiked(likeStatus.liked);
+      }
+
+      if (countResult.success) {
+        setLikeCount(countResult.count);
+      }
+    };
+
+    loadLikeStatus();
+  }, [blogId]);
+
   const handleLike = async () => {
     if (loading) return;
 
     setLoading(true);
 
     try {
-      const result = liked
-        ? await blogsApi.unlike(blogId)
-        : await blogsApi.like(blogId);
+      const result = await engagementApi.toggleLike(blogId);
 
       if (result.success) {
         setLiked(result.liked);

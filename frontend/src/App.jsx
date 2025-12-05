@@ -30,7 +30,10 @@ const App = () => {
   const isCreatePage = location.pathname.startsWith("/create");
   const isDetailPage = location.pathname.match(/^\/news\/\d+$/);
   const isMyPage = location.pathname === "/my-spaces" || location.pathname === "/my-content";
+  const isNewsPage = location.pathname === "/news";
+  const isSpacesPage = location.pathname === "/spaces";
   const hideHeaderFooter = isCreatePage || isDetailPage;
+  const hideHeroAndNav = isNewsPage || isSpacesPage;
 
   const getHeroConfig = () => {
     switch (location.pathname) {
@@ -119,9 +122,9 @@ const App = () => {
 
   return (
     <main className="app-container">
-      {!hideHeaderFooter && (
+      {!hideHeaderFooter && <Header />}
+      {!hideHeaderFooter && !hideHeroAndNav && (
         <>
-          <Header />
           <HeroSection
             title={heroConfig.title}
             subtitle={heroConfig.subtitle}

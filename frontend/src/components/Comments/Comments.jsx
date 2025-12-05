@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { blogsApi } from '../../services';
+import { engagementApi } from '../../services/engagement.api';
 import './Comments.css';
 
 const Comments = ({ blogId }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchComments();
+    const savedName = localStorage.getItem('user_display_name');
+    if (savedName) {
+      setUserName(savedName);
+    }
   }, [blogId]);
 
   const fetchComments = async () => {
     setLoading(true);
     try {
-      const result = await blogsApi.getComments(blogId);
+      const result = await engagementApi.getComments(blogId);
 
       if (result.success) {
         setComments(result.data);
@@ -32,13 +37,16 @@ const Comments = ({ blogId }) => {
 
     if (!newComment.trim()) return;
 
+    const displayName = userName.trim() || 'Anonymous';
+
+    if (userName.trim()) {
+      localStorage.setItem('user_display_name', userName.trim());
+    }
+
     setSubmitting(true);
 
     try {
-      const result = await blogsApi.addComment(blogId, {
-        comment: newComment,
-        userId: 1,
-      });
+      const result = await engagementApi.addComment(blogId, newComment, displayName);
 
       if (result.success) {
         setNewComment('');
@@ -55,15 +63,7 @@ const Comments = ({ blogId }) => {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
 
     try {
-      const response = await fetch(`${API_URL}/blogs/${blogId}/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: 1 }),
-      });
-
-      const result = await response.json();
+      const result = await engagementApi.deleteComment(commentId);
 
       if (result.success) {
         await fetchComments();
@@ -97,6 +97,13 @@ const Comments = ({ blogId }) => {
       </h3>
 
       <form onSubmit={handleSubmit} className="comment-form">
+        <input
+          type="text"
+          value={userName}
+          onChange={(e) => setUserName(e.target.value)}
+          placeholder="Your name (optional)"
+          className="comment-name-input"
+        />
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
@@ -125,11 +132,11 @@ const Comments = ({ blogId }) => {
                 <div className="comment-header">
                   <div className="comment-author">
                     <span className="author-avatar">
-                      {(comment.display_name || comment.email || 'U').charAt(0).toUpperCase()}
+                      {(comment.user_name || 'A').charAt(0).toUpperCase()}
                     </span>
                     <div className="author-info">
                       <span className="author-name">
-                        {comment.display_name || comment.email || 'User'}
+                        {comment.user_name || 'Anonymous'}
                       </span>
                       <span className="comment-date">{formatDate(comment.created_at)}</span>
                     </div>

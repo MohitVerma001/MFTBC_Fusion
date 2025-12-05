@@ -17,6 +17,22 @@
   margin-bottom: 2rem;
 }
 
+.comment-name-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.comment-name-input:focus {
+  outline: none;
+  border-color: #E60000;
+}
+
 .comment-textarea {
   width: 100%;
   padding: 1rem;
@@ -30,13 +46,13 @@
 
 .comment-textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #E60000;
 }
 
 .comment-submit-btn {
   margin-top: 1rem;
   padding: 0.75rem 2rem;
-  background: #007bff;
+  background: #E60000;
   color: white;
   border: none;
   border-radius: 8px;
@@ -46,9 +62,9 @@
 }
 
 .comment-submit-btn:hover:not(:disabled) {
-  background: #0056b3;
+  background: #CC0000;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(230, 0, 0, 0.3);
 }
 
 .comment-submit-btn:disabled {

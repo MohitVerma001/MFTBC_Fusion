@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import LikeButton from "../../components/LikeButton/LikeButton";
 import Comments from "../../components/Comments/Comments";
+import { engagementApi } from "../../services/engagement.api";
 import "./NewsDetail.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -82,9 +83,15 @@ const NewsDetail = () => {
     }
   };
 
-  const checkBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarked_articles') || '[]');
-    setIsBookmarked(bookmarks.includes(id));
+  const checkBookmark = async () => {
+    try {
+      const result = await engagementApi.checkUserBookmarked(id);
+      if (result.success) {
+        setIsBookmarked(result.bookmarked);
+      }
+    } catch (error) {
+      console.error('Error checking bookmark status:', error);
+    }
   };
 
   const checkFollowing = () => {
@@ -94,17 +101,14 @@ const NewsDetail = () => {
     }
   };
 
-  const toggleBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarked_articles') || '[]');
-
-    if (isBookmarked) {
-      const updated = bookmarks.filter(bookmarkId => bookmarkId !== id);
-      localStorage.setItem('bookmarked_articles', JSON.stringify(updated));
-      setIsBookmarked(false);
-    } else {
-      bookmarks.push(id);
-      localStorage.setItem('bookmarked_articles', JSON.stringify(bookmarks));
-      setIsBookmarked(true);
+  const toggleBookmark = async () => {
+    try {
+      const result = await engagementApi.toggleBookmark(id);
+      if (result.success) {
+        setIsBookmarked(result.bookmarked);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
     }
   };
 
