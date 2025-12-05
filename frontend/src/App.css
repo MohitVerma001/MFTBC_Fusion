@@ -5,13 +5,32 @@
   box-sizing: border-box;
 }
 
+:root {
+  --fuso-black: #000000;
+  --fuso-red: #E60000;
+  --fuso-light-grey: #f5f5f7;
+  --fuso-grey: #e5e5e7;
+  --fuso-dark-grey: #86868b;
+  --fuso-white: #ffffff;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --border-color: #d2d2d7;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+}
+
 body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f9fafa;
+  background: var(--fuso-light-grey);
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 
 .app-container {
@@ -19,6 +38,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--fuso-light-grey);
 }
 
 /* Custom Bootstrap Grid Utilities */
@@ -30,10 +50,110 @@ body {
   gap: 1rem;
 }
 
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--fuso-black);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+}
+
+h1 { font-size: clamp(1.75rem, 3vw, 2.5rem); }
+h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); }
+h3 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
+h4 { font-size: clamp(1.125rem, 1.5vw, 1.5rem); }
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1em;
+}
+
 /* Smooth Transitions */
 button,
-a {
-  transition: all 0.2s ease;
+a,
+.card,
+.hover-lift {
+  transition: all var(--transition-fast);
+}
+
+/* Modern Button Styles */
+.btn {
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 10px 24px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--fuso-red);
+  color: var(--fuso-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--fuso-light-grey);
+  border-color: var(--fuso-dark-grey);
+}
+
+/* Modern Card Styles */
+.card {
+  background: var(--fuso-white);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-compact {
+  padding: 16px;
+}
+
+/* Page Container */
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding: 32px 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    padding: 40px 32px;
+  }
 }
 
 /* Custom Scrollbar */

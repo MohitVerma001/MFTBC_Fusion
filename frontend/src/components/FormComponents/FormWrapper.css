@@ -65,12 +65,8 @@
   font-family: 'Roboto', sans-serif;
   font-weight: 700;
   font-size: 36px;
-  color: #111827;
+  color: var(--fuso-black);
   margin-bottom: 0.75rem;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .form-wrapper-subtitle {
@@ -122,20 +118,21 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: var(--fuso-red);
   border: none;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  color: var(--fuso-white);
+  box-shadow: 0 4px 12px rgba(230, 0, 0, 0.3);
 }
 
 .btn-primary:hover {
+  background: #cc0000;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 8px 20px rgba(230, 0, 0, 0.4);
 }
 
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 2px 8px rgba(230, 0, 0, 0.3);
 }
 
 .btn-submit::before {
