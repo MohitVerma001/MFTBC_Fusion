@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const getAnonymousUserId = () => {
   let userId = localStorage.getItem('anonymous_user_id');
@@ -14,51 +14,17 @@ export const engagementApi = {
     try {
       const userId = getAnonymousUserId();
 
-      const { data: existingLike, error: checkError } = await supabase
-        .from('blog_likes')
-        .select('*')
-        .eq('blog_id', blogId)
-        .eq('user_id', userId)
-        .maybeSingle();
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId
+        },
+        body: JSON.stringify({ userId })
+      });
 
-      if (checkError) throw checkError;
-
-      if (existingLike) {
-        const { error: deleteError } = await supabase
-          .from('blog_likes')
-          .delete()
-          .eq('id', existingLike.id);
-
-        if (deleteError) throw deleteError;
-
-        const { count } = await supabase
-          .from('blog_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('blog_id', blogId);
-
-        return {
-          success: true,
-          liked: false,
-          likeCount: count || 0
-        };
-      } else {
-        const { error: insertError } = await supabase
-          .from('blog_likes')
-          .insert({ blog_id: blogId, user_id: userId });
-
-        if (insertError) throw insertError;
-
-        const { count } = await supabase
-          .from('blog_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('blog_id', blogId);
-
-        return {
-          success: true,
-          liked: true,
-          likeCount: count || 0
-        };
-      }
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error toggling like:', error);
       return {
@@ -70,17 +36,9 @@ export const engagementApi = {
 
   async getLikeCount(blogId) {
     try {
-      const { count, error } = await supabase
-        .from('blog_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('blog_id', blogId);
-
-      if (error) throw error;
-
-      return {
-        success: true,
-        count: count || 0
-      };
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/like/count`);
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting like count:', error);
       return {
@@ -94,19 +52,14 @@ export const engagementApi = {
     try {
       const userId = getAnonymousUserId();
 
-      const { data, error } = await supabase
-        .from('blog_likes')
-        .select('*')
-        .eq('blog_id', blogId)
-        .eq('user_id', userId)
-        .maybeSingle();
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/like/check`, {
+        headers: {
+          'x-user-id': userId
+        }
+      });
 
-      if (error) throw error;
-
-      return {
-        success: true,
-        liked: !!data
-      };
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error checking user liked:', error);
       return {
@@ -120,24 +73,22 @@ export const engagementApi = {
     try {
       const userId = getAnonymousUserId();
 
-      const { data, error } = await supabase
-        .from('blog_comments')
-        .insert({
-          blog_id: blogId,
-          user_id: userId,
-          user_name: userName,
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId
+        },
+        body: JSON.stringify({
+          userId,
           comment: content,
-          parent_comment_id: parentCommentId
+          userName,
+          parentCommentId
         })
-        .select()
-        .single();
+      });
 
-      if (error) throw error;
-
-      return {
-        success: true,
-        data
-      };
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error adding comment:', error);
       return {
@@ -149,19 +100,9 @@ export const engagementApi = {
 
   async getComments(blogId) {
     try {
-      const { data, error } = await supabase
-        .from('blog_comments')
-        .select('*')
-        .eq('blog_id', blogId)
-        .is('parent_comment_id', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return {
-        success: true,
-        data: data || []
-      };
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/comments`);
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting comments:', error);
       return {
@@ -173,16 +114,15 @@ export const engagementApi = {
 
   async deleteComment(commentId) {
     try {
-      const { error } = await supabase
-        .from('blog_comments')
-        .delete()
-        .eq('id', commentId);
+      const response = await fetch(`${API_URL}/engagement/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) throw error;
-
-      return {
-        success: true
-      };
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error deleting comment:', error);
       return {
@@ -196,39 +136,17 @@ export const engagementApi = {
     try {
       const userId = getAnonymousUserId();
 
-      const { data: existingBookmark, error: checkError } = await supabase
-        .from('blog_bookmarks')
-        .select('*')
-        .eq('blog_id', blogId)
-        .eq('user_id', userId)
-        .maybeSingle();
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/bookmark`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId
+        },
+        body: JSON.stringify({ userId })
+      });
 
-      if (checkError) throw checkError;
-
-      if (existingBookmark) {
-        const { error: deleteError } = await supabase
-          .from('blog_bookmarks')
-          .delete()
-          .eq('id', existingBookmark.id);
-
-        if (deleteError) throw deleteError;
-
-        return {
-          success: true,
-          bookmarked: false
-        };
-      } else {
-        const { error: insertError } = await supabase
-          .from('blog_bookmarks')
-          .insert({ blog_id: blogId, user_id: userId });
-
-        if (insertError) throw insertError;
-
-        return {
-          success: true,
-          bookmarked: true
-        };
-      }
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error toggling bookmark:', error);
       return {
@@ -242,19 +160,14 @@ export const engagementApi = {
     try {
       const userId = getAnonymousUserId();
 
-      const { data, error } = await supabase
-        .from('blog_bookmarks')
-        .select('*')
-        .eq('blog_id', blogId)
-        .eq('user_id', userId)
-        .maybeSingle();
+      const response = await fetch(`${API_URL}/engagement/blogs/${blogId}/bookmark/check`, {
+        headers: {
+          'x-user-id': userId
+        }
+      });
 
-      if (error) throw error;
-
-      return {
-        success: true,
-        bookmarked: !!data
-      };
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error checking user bookmarked:', error);
       return {

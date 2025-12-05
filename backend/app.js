@@ -9,6 +9,7 @@ import tagRoutes from './src/routes/tag.routes.js';
 import placeRoutes from './src/routes/place.routes.js';
 import subspaceRoutes from './src/routes/subspace.routes.js';
 import uploadRoutes from './src/routes/upload.routes.js';
+import engagementRoutes from './src/routes/engagement.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +37,8 @@ app.get('/', (req, res) => {
       tags: '/api/tags',
       places: '/api/places',
       subspaces: '/api/subspaces',
-      upload: '/api/upload'
+      upload: '/api/upload',
+      engagement: '/api/engagement'
     }
   });
 });
@@ -47,6 +49,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/places', placeRoutes);
 app.use('/api/subspaces', subspaceRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/engagement', engagementRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
