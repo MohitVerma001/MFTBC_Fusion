@@ -52,16 +52,15 @@ export const SubspaceModel = {
       is_root_space
     } = subspaceData;
 
-    const navItems = navigation_items || ["News", "HR", "Activity", "Content", "IT", "People", "Spaces", "Calendar", "CEO Message"];
+    const navItems = Array.isArray(navigation_items) ? navigation_items : ["News", "HR", "Activity", "Content", "IT", "People", "Spaces", "Calendar", "CEO Message"];
 
     const result = await pool.query(
       `INSERT INTO subspaces (
         name, description, content_html, image_url,
         is_published, parent_space_id, language,
         visibility, scheduled_at, created_by,
-        navigation_items, display_order, is_root_space,
-        created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+        navigation_items, display_order, is_root_space
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13)
       RETURNING *`,
       [
         name,
@@ -70,7 +69,7 @@ export const SubspaceModel = {
         image_url || null,
         is_published !== undefined ? is_published : true,
         parent_space_id || null,
-        language || 'English',
+        language || 'en',
         visibility || 'public',
         scheduled_at || null,
         created_by || null,
@@ -189,8 +188,16 @@ export const SubspaceModel = {
 
     Object.keys(subspaceData).forEach(key => {
       if (key !== 'id') {
-        fields.push(`${key} = $${paramIndex}`);
-        values.push(subspaceData[key]);
+        let value = subspaceData[key];
+
+        if (key === 'navigation_items' && Array.isArray(value)) {
+          value = JSON.stringify(value);
+          fields.push(`${key} = $${paramIndex}::jsonb`);
+        } else {
+          fields.push(`${key} = $${paramIndex}`);
+        }
+
+        values.push(value);
         paramIndex++;
       }
     });
@@ -199,11 +206,10 @@ export const SubspaceModel = {
       return await this.findById(id);
     }
 
-    fields.push(`updated_at = NOW()`);
     values.push(id);
 
     const result = await pool.query(
-      `UPDATE subspaces SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      `UPDATE subspaces SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
       values
     );
 
