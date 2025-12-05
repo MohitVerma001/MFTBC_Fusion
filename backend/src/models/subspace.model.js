@@ -42,20 +42,26 @@ export const SubspaceModel = {
       content_html,
       image_url,
       is_published,
-      parent_subspace_id,
+      parent_space_id,
       language,
       visibility,
       scheduled_at,
-      created_by
+      created_by,
+      navigation_items,
+      display_order,
+      is_root_space
     } = subspaceData;
+
+    const navItems = navigation_items || ["News", "HR", "Activity", "Content", "IT", "People", "Spaces", "Calendar", "CEO Message"];
 
     const result = await pool.query(
       `INSERT INTO subspaces (
         name, description, content_html, image_url,
-        is_published, parent_subspace_id, language,
+        is_published, parent_space_id, language,
         visibility, scheduled_at, created_by,
+        navigation_items, display_order, is_root_space,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
       RETURNING *`,
       [
         name,
@@ -63,11 +69,14 @@ export const SubspaceModel = {
         content_html || '',
         image_url || null,
         is_published !== undefined ? is_published : true,
-        parent_subspace_id || null,
+        parent_space_id || null,
         language || 'English',
         visibility || 'public',
         scheduled_at || null,
-        created_by || null
+        created_by || null,
+        JSON.stringify(navItems),
+        display_order || 0,
+        is_root_space || false
       ]
     );
 
@@ -85,9 +94,19 @@ export const SubspaceModel = {
       paramIndex++;
     }
 
-    if (filters.parent_subspace_id !== undefined && filters.parent_subspace_id !== null) {
-      query += ` AND parent_subspace_id = $${paramIndex}`;
-      params.push(filters.parent_subspace_id);
+    if (filters.parent_space_id !== undefined) {
+      if (filters.parent_space_id === null || filters.parent_space_id === 'null') {
+        query += ` AND parent_space_id IS NULL`;
+      } else {
+        query += ` AND parent_space_id = $${paramIndex}`;
+        params.push(filters.parent_space_id);
+        paramIndex++;
+      }
+    }
+
+    if (filters.is_root_space !== undefined) {
+      query += ` AND is_root_space = $${paramIndex}`;
+      params.push(filters.is_root_space);
       paramIndex++;
     }
 
@@ -109,9 +128,39 @@ export const SubspaceModel = {
       paramIndex++;
     }
 
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY display_order ASC, created_at DESC';
 
     const result = await pool.query(query, params);
+    return result.rows;
+  },
+
+  async getRootSpaces() {
+    const result = await pool.query(
+      'SELECT * FROM subspaces WHERE is_root_space = true OR parent_space_id IS NULL ORDER BY display_order ASC, created_at ASC'
+    );
+    return result.rows;
+  },
+
+  async getChildSpaces(parentId) {
+    const result = await pool.query(
+      'SELECT * FROM subspaces WHERE parent_space_id = $1 ORDER BY display_order ASC, created_at DESC',
+      [parentId]
+    );
+    return result.rows;
+  },
+
+  async getSpaceHierarchy(spaceId) {
+    const result = await pool.query(
+      `WITH RECURSIVE space_tree AS (
+        SELECT *, 0 as level FROM subspaces WHERE id = $1
+        UNION ALL
+        SELECT s.*, st.level + 1
+        FROM subspaces s
+        INNER JOIN space_tree st ON s.parent_space_id = st.id
+      )
+      SELECT * FROM space_tree ORDER BY level, display_order, created_at`,
+      [spaceId]
+    );
     return result.rows;
   },
 

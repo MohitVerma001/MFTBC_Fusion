@@ -55,13 +55,6 @@ const CreatePanel = ({ isOpen, onClose }) => {
       iconColor: "#F59E0B",
     },
     {
-      id: "subspace",
-      label: "Create SubSpace",
-      icon: "🏢",
-      iconBg: "#FEF3C7",
-      iconColor: "#F59E0B",
-    },
-    {
       id: "events",
       label: "Create Events",
       icon: "📅",

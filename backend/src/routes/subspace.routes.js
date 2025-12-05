@@ -6,7 +6,16 @@ const router = express.Router();
 // Create subspace (space)
 router.post('/', SubspaceController.createSubspace);
 
-// Get all subspaces (with optional filters: is_published, search, parentSubspaceId)
+// Get root spaces
+router.get('/root', SubspaceController.getRootSpaces);
+
+// Get child spaces of a parent
+router.get('/:parentId/children', SubspaceController.getChildSpaces);
+
+// Get space hierarchy
+router.get('/:id/hierarchy', SubspaceController.getSpaceHierarchy);
+
+// Get all subspaces (with optional filters: is_published, search, parent_space_id)
 router.get('/', SubspaceController.getAllSubspaces);
 
 // Get subspace by ID
