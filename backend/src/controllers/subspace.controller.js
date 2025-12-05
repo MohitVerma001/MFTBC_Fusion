@@ -37,11 +37,13 @@ export const SubspaceController = {
 
   async getAllSubspaces(req, res) {
     try {
-      const { is_published, search, parentSubspaceId, parent_subspace_id } = req.query;
+      const { is_published, search, parentSubspaceId, parent_subspace_id, created_by, visibility } = req.query;
 
       const filters = {};
       if (is_published !== undefined) filters.is_published = is_published === 'true';
       if (search) filters.search = search;
+      if (created_by) filters.created_by = created_by;
+      if (visibility) filters.visibility = visibility;
 
       const parentId = parentSubspaceId || parent_subspace_id;
       if (parentId !== undefined) {

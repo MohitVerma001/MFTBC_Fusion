@@ -28,15 +28,17 @@ export const BlogModel = {
       is_place_blog,
       author_id,
       status,
-      published_at
+      published_at,
+      hidden_post,
+      scheduled_at
     } = blogData;
 
     const result = await pool.query(
       `INSERT INTO blogs (
         title, content, content_html, publish_to, category_id, space_id, place_id,
         restricted_comments, is_place_blog, author_id, status, published_at,
-        created_at, updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())
+        hidden_post, scheduled_at, created_at, updated_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),NOW())
       RETURNING *`,
       [
         title,
@@ -50,7 +52,9 @@ export const BlogModel = {
         is_place_blog || false,
         author_id || 1,
         status || 'published',
-        published_at || new Date()
+        published_at || new Date(),
+        hidden_post || false,
+        scheduled_at || null
       ]
     );
 
@@ -90,6 +94,12 @@ export const BlogModel = {
     if (filters.authorId) {
       where += ` AND b.author_id = $${i}`;
       params.push(filters.authorId);
+      i++;
+    }
+
+    if (filters.hiddenPost !== undefined) {
+      where += ` AND b.hidden_post = $${i}`;
+      params.push(filters.hiddenPost);
       i++;
     }
 

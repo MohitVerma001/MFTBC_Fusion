@@ -17,6 +17,9 @@ import CreateDiscussion from "./pages/CreateDiscussion/CreateDiscussion";
 import CreateSubSpace from "./pages/CreateSubSpace/CreateSubSpace";
 import CreateVideo from "./pages/CreateVideo/CreateVideo";
 import CreateCategory from "./pages/CreateCategory/CreateCategory";
+import CreateSpace from "./pages/CreateSpace/CreateSpace";
+import MySpaces from "./pages/MySpaces/MySpaces";
+import MyContent from "./pages/MyContent/MyContent";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
@@ -25,6 +28,7 @@ const App = () => {
 
   const isCreatePage = location.pathname.startsWith("/create");
   const isDetailPage = location.pathname.match(/^\/news\/\d+$/);
+  const isMyPage = location.pathname === "/my-spaces" || location.pathname === "/my-content";
   const hideHeaderFooter = isCreatePage || isDetailPage;
 
   const getHeroConfig = () => {
@@ -133,6 +137,7 @@ const App = () => {
         <Route path="/calendar" element={<div className="container py-5"><h2>Calendar Page - Coming Soon</h2></div>} />
         <Route path="/ceo-message" element={<div className="container py-5"><h2>CEO Message Page - Coming Soon</h2></div>} />
         <Route path="/create/blog" element={<CreateBlog />} />
+        <Route path="/create/blog/:id" element={<CreateBlog />} />
         <Route path="/create/document" element={<CreateDocument />} />
         <Route path="/create/event" element={<CreateEvent />} />
         <Route path="/create/poll" element={<CreatePoll />} />
@@ -140,6 +145,10 @@ const App = () => {
         <Route path="/create/subspace" element={<CreateSubSpace />} />
         <Route path="/create/video" element={<CreateVideo />} />
         <Route path="/create/category" element={<CreateCategory />} />
+        <Route path="/create/space" element={<CreateSpace />} />
+        <Route path="/create/space/:id" element={<CreateSpace />} />
+        <Route path="/my-spaces" element={<MySpaces />} />
+        <Route path="/my-content" element={<MyContent />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!hideHeaderFooter && <Footer />}

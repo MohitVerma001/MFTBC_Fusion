@@ -42,15 +42,20 @@ export const SubspaceModel = {
       content_html,
       image_url,
       is_published,
-      parent_subspace_id
+      parent_subspace_id,
+      language,
+      visibility,
+      scheduled_at,
+      created_by
     } = subspaceData;
 
     const result = await pool.query(
       `INSERT INTO subspaces (
         name, description, content_html, image_url,
-        is_published, parent_subspace_id,
+        is_published, parent_subspace_id, language,
+        visibility, scheduled_at, created_by,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
       RETURNING *`,
       [
         name,
@@ -58,7 +63,11 @@ export const SubspaceModel = {
         content_html || '',
         image_url || null,
         is_published !== undefined ? is_published : true,
-        parent_subspace_id || null
+        parent_subspace_id || null,
+        language || 'English',
+        visibility || 'public',
+        scheduled_at || null,
+        created_by || null
       ]
     );
 
@@ -79,6 +88,18 @@ export const SubspaceModel = {
     if (filters.parent_subspace_id !== undefined && filters.parent_subspace_id !== null) {
       query += ` AND parent_subspace_id = $${paramIndex}`;
       params.push(filters.parent_subspace_id);
+      paramIndex++;
+    }
+
+    if (filters.created_by) {
+      query += ` AND created_by = $${paramIndex}`;
+      params.push(filters.created_by);
+      paramIndex++;
+    }
+
+    if (filters.visibility) {
+      query += ` AND visibility = $${paramIndex}`;
+      params.push(filters.visibility);
       paramIndex++;
     }
 

@@ -48,6 +48,13 @@ const CreatePanel = ({ isOpen, onClose }) => {
       iconColor: "#22C55E",
     },
     {
+      id: "space",
+      label: "Create Space",
+      icon: "🌐",
+      iconBg: "#FEF3C7",
+      iconColor: "#F59E0B",
+    },
+    {
       id: "subspace",
       label: "Create SubSpace",
       icon: "🏢",
@@ -98,6 +105,7 @@ const CreatePanel = ({ isOpen, onClose }) => {
     const routeMap = {
       blogs: "/create/blog",
       documents: "/create/document",
+      space: "/create/space",
       subspace: "/create/subspace",
       events: "/create/event",
       discussion: "/create/discussion",

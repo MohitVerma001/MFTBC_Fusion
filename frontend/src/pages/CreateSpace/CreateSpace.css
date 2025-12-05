@@ -1,0 +1,115 @@
+.create-space-page {
+  min-height: 100vh;
+  background: var(--fuso-light-grey);
+}
+
+.visibility-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--fuso-white);
+}
+
+.radio-option:hover {
+  border-color: var(--fuso-dark-grey);
+  background: var(--fuso-light-grey);
+  transform: translateX(4px);
+}
+
+.radio-option input[type="radio"] {
+  margin-top: 4px;
+  margin-right: 12px;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+  color: var(--fuso-black);
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+  border-color: var(--fuso-red);
+  background: rgba(230, 0, 0, 0.05);
+}
+
+.radio-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.radio-label strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.radio-label small {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.form-check {
+  padding: 12px 16px;
+  background: var(--fuso-light-grey);
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.form-check-input {
+  width: 20px;
+  height: 20px;
+  margin-top: 0;
+  cursor: pointer;
+  border: 2px solid var(--border-color);
+}
+
+.form-check-input:checked {
+  background-color: var(--fuso-red);
+  border-color: var(--fuso-red);
+}
+
+.form-check-input:focus {
+  border-color: var(--fuso-red);
+  box-shadow: 0 0 0 4px rgba(230, 0, 0, 0.1);
+}
+
+.form-check-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .visibility-options {
+    gap: 10px;
+  }
+
+  .radio-option {
+    padding: 12px;
+  }
+
+  .radio-label strong {
+    font-size: 14px;
+  }
+
+  .radio-label small {
+    font-size: 12px;
+  }
+}
