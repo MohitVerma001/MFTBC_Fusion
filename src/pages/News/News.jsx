@@ -11,10 +11,14 @@ const News = () => {
   const [pagination, setPagination] = useState({});
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
+  const [businessKeys, setBusinessKeys] = useState([]);
+  const [languages, setLanguages] = useState([]);
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
     tags: searchParams.get('tags') || '',
     authorId: searchParams.get('authorId') || '',
+    businessKey: searchParams.get('businessKey') || '',
+    language: searchParams.get('language') || '',
     from: searchParams.get('from') || '',
     to: searchParams.get('to') || '',
     page: parseInt(searchParams.get('page')) || 1,
@@ -23,8 +27,33 @@ const News = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    fetchBusinessKeys();
+    fetchLanguages();
+  }, []);
+
+  useEffect(() => {
     fetchNews();
   }, [searchParams]);
+
+  const fetchBusinessKeys = async () => {
+    try {
+      const res = await fetch(`${API_URL}/spaces/business-keys`);
+      const data = await res.json();
+      if (data.success) setBusinessKeys(data.data || []);
+    } catch (err) {
+      console.error("Error fetching business keys:", err);
+    }
+  };
+
+  const fetchLanguages = async () => {
+    try {
+      const res = await fetch(`${API_URL}/spaces/languages`);
+      const data = await res.json();
+      if (data.success) setLanguages(data.data || []);
+    } catch (err) {
+      console.error("Error fetching languages:", err);
+    }
+  };
 
   const fetchNews = async () => {
     setLoading(true);
@@ -39,6 +68,8 @@ const News = () => {
       if (filters.search) params.append('search', filters.search);
       if (filters.tags) params.append('tags', filters.tags);
       if (filters.authorId) params.append('authorId', filters.authorId);
+      if (filters.businessKey) params.append('businessKey', filters.businessKey);
+      if (filters.language) params.append('language', filters.language);
       if (filters.from) params.append('from', filters.from);
       if (filters.to) params.append('to', filters.to);
 
@@ -82,7 +113,7 @@ const News = () => {
   };
 
   const clearFilters = () => {
-    const clearedFilters = { search: '', tags: '', authorId: '', from: '', to: '', page: 1 };
+    const clearedFilters = { search: '', tags: '', authorId: '', businessKey: '', language: '', from: '', to: '', page: 1 };
     setFilters(clearedFilters);
     updateURLParams(clearedFilters);
   };
@@ -99,6 +130,8 @@ const News = () => {
     if (newFilters.search) params.set('search', newFilters.search);
     if (newFilters.tags) params.set('tags', newFilters.tags);
     if (newFilters.authorId) params.set('authorId', newFilters.authorId);
+    if (newFilters.businessKey) params.set('businessKey', newFilters.businessKey);
+    if (newFilters.language) params.set('language', newFilters.language);
     if (newFilters.from) params.set('from', newFilters.from);
     if (newFilters.to) params.set('to', newFilters.to);
     if (newFilters.page > 1) params.set('page', newFilters.page);
@@ -109,7 +142,7 @@ const News = () => {
     navigate(`/news/${articleId}`);
   };
 
-  const hasActiveFilters = filters.search || filters.tags || filters.authorId || filters.from || filters.to;
+  const hasActiveFilters = filters.search || filters.tags || filters.authorId || filters.businessKey || filters.language || filters.from || filters.to;
 
   if (loading) return <div className="loading-text">Loading News...</div>;
 
@@ -181,6 +214,34 @@ const News = () => {
                 </div>
 
                 <div className="filter-group">
+                  <label className="filter-label">Business Space</label>
+                  <select
+                    value={filters.businessKey}
+                    onChange={(e) => handleFilterChange('businessKey', e.target.value)}
+                    className="filter-input"
+                  >
+                    <option value="">All Spaces</option>
+                    {businessKeys.map((bk) => (
+                      <option key={bk} value={bk}>{bk}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label className="filter-label">Language</label>
+                  <select
+                    value={filters.language}
+                    onChange={(e) => handleFilterChange('language', e.target.value)}
+                    className="filter-input"
+                  >
+                    <option value="">All Languages</option>
+                    {languages.map((lang) => (
+                      <option key={lang} value={lang}>{lang}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-group">
                   <label className="filter-label">From Date</label>
                   <input
                     type="date"
@@ -238,6 +299,24 @@ const News = () => {
                   <button onClick={() => {
                     setFilters(prev => ({ ...prev, authorId: '', page: 1 }));
                     updateURLParams({ ...filters, authorId: '', page: 1 });
+                  }}>×</button>
+                </span>
+              )}
+              {filters.businessKey && (
+                <span className="filter-tag">
+                  Space: {filters.businessKey}
+                  <button onClick={() => {
+                    setFilters(prev => ({ ...prev, businessKey: '', page: 1 }));
+                    updateURLParams({ ...filters, businessKey: '', page: 1 });
+                  }}>×</button>
+                </span>
+              )}
+              {filters.language && (
+                <span className="filter-tag">
+                  Language: {filters.language}
+                  <button onClick={() => {
+                    setFilters(prev => ({ ...prev, language: '', page: 1 }));
+                    updateURLParams({ ...filters, language: '', page: 1 });
                   }}>×</button>
                 </span>
               )}

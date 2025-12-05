@@ -27,13 +27,15 @@ const CreateBlog = () => {
     restrictedComments: false,
     isPlaceBlog: false,
     placeId: "",
-    spaceId: "" // ⭐ NEW: selected space (MFTBC / DTA / etc.)
+    businessKey: "",
+    language: ""
   });
 
   const [errors, setErrors] = useState({});
   const [tags, setTags] = useState([]);
   const [places, setPlaces] = useState([]);
-  const [spaces, setSpaces] = useState([]); // ⭐ NEW: list of subspaces / spaces
+  const [businessKeys, setBusinessKeys] = useState([]);
+  const [languages, setLanguages] = useState([]);
   const [tagSearch, setTagSearch] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,8 @@ const CreateBlog = () => {
   useEffect(() => {
     fetchTags();
     fetchPlaces();
-    fetchSpaces();
+    fetchBusinessKeys();
+    fetchLanguages();
   }, []);
 
   useEffect(() => {
@@ -77,28 +80,27 @@ const CreateBlog = () => {
     }
   };
 
-  const fetchSpaces = async () => {
+  const fetchBusinessKeys = async () => {
     try {
-      const response = await fetch(`${API_URL}/subspaces?is_published=true`);
+      const response = await fetch(`${API_URL}/spaces/business-keys`);
       const result = await response.json();
-
       if (result.success) {
-        const list = result.data || [];
-        setSpaces(list);
-
-        // Auto-set default MFTBC if nothing selected
-        const mftbc = list.find(
-          (s) => s.name && s.name.toLowerCase() === "mftbc"
-        );
-        if (mftbc && !formData.spaceId) {
-          setFormData((prev) => ({
-            ...prev,
-            spaceId: String(mftbc.id)
-          }));
-        }
+        setBusinessKeys(result.data || []);
       }
     } catch (error) {
-      console.error("Error fetching spaces:", error);
+      console.error("Error fetching business keys:", error);
+    }
+  };
+
+  const fetchLanguages = async () => {
+    try {
+      const response = await fetch(`${API_URL}/spaces/languages`);
+      const result = await response.json();
+      if (result.success) {
+        setLanguages(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching languages:", error);
     }
   };
 
@@ -189,8 +191,11 @@ const CreateBlog = () => {
     if (!formData.content.trim() || formData.content === "<p><br></p>")
       newErrors.content = "Content is required";
 
-    if (!formData.spaceId)
-      newErrors.spaceId = "Please select a space (e.g. MFTBC, DTA)";
+    if (!formData.businessKey)
+      newErrors.businessKey = "Please select a business space";
+
+    if (!formData.language)
+      newErrors.language = "Please select a language";
 
     if (formData.isPlaceBlog && !formData.placeId)
       newErrors.placeId = "Select a place";
@@ -262,7 +267,8 @@ const CreateBlog = () => {
         restrictReplies: formData.restrictedComments,
         isPlaceBlog: formData.isPlaceBlog,
         authorId: 1,
-        spaceId: formData.spaceId ? Number(formData.spaceId) : undefined,
+        businessKey: formData.businessKey,
+        language: formData.language,
         tags: formData.tags.map((t) => t.name),
         contentImages: imageUrls,
         attachments: attachmentData
@@ -315,19 +321,32 @@ const CreateBlog = () => {
             placeholder="Select where to publish"
           />
 
-          {/* Space selection – MFTBC / DTA / etc. */}
           <SelectField
-            label="Space"
-            name="spaceId"
-            value={formData.spaceId}
+            label="Business Space"
+            name="businessKey"
+            value={formData.businessKey}
             onChange={handleInputChange}
-            options={spaces.map((s) => ({
-              value: s.id,
-              label: s.name
+            options={businessKeys.map((bk) => ({
+              value: bk,
+              label: bk
             }))}
             required
-            error={errors.spaceId}
-            placeholder="Select a space (e.g. MFTBC, DTA)"
+            error={errors.businessKey}
+            placeholder="Select business space"
+          />
+
+          <SelectField
+            label="Language"
+            name="language"
+            value={formData.language}
+            onChange={handleInputChange}
+            options={languages.map((lang) => ({
+              value: lang,
+              label: lang
+            }))}
+            required
+            error={errors.language}
+            placeholder="Select language"
           />
 
           <CategoryDropdown

@@ -23,6 +23,8 @@ export const BlogModel = {
       publish_to,
       category_id,
       space_id,
+      business_key,
+      language,
       place_id,
       restricted_comments,
       is_place_blog,
@@ -30,6 +32,18 @@ export const BlogModel = {
       status,
       published_at
     } = blogData;
+
+    let resolvedSpaceId = space_id;
+
+    if (!resolvedSpaceId && business_key && language) {
+      const spaceResult = await pool.query(
+        `SELECT id FROM spaces WHERE business_key = $1 AND language = $2 AND is_active = true`,
+        [business_key, language]
+      );
+      if (spaceResult.rows.length > 0) {
+        resolvedSpaceId = spaceResult.rows[0].id;
+      }
+    }
 
     const result = await pool.query(
       `INSERT INTO blogs (
@@ -44,7 +58,7 @@ export const BlogModel = {
         content_html || content || '',
         publish_to,
         category_id || null,
-        space_id || null,
+        resolvedSpaceId || null,
         place_id || null,
         restricted_comments || false,
         is_place_blog || false,
@@ -62,7 +76,6 @@ export const BlogModel = {
     let where = 'WHERE 1=1';
     let i = 1;
 
-    // ----- APPLY FILTERS -----
     if (filters.publishTo) {
       where += ` AND b.publish_to = $${i}`;
       params.push(filters.publishTo);
@@ -78,6 +91,31 @@ export const BlogModel = {
     if (filters.spaceId) {
       where += ` AND b.space_id = $${i}`;
       params.push(filters.spaceId);
+      i++;
+    }
+
+    if (filters.businessKey && filters.language) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM spaces s
+        WHERE s.id = b.space_id
+        AND s.business_key = $${i}
+        AND s.language = $${i + 1}
+      )`;
+      params.push(filters.businessKey, filters.language);
+      i += 2;
+    } else if (filters.businessKey) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM spaces s
+        WHERE s.id = b.space_id AND s.business_key = $${i}
+      )`;
+      params.push(filters.businessKey);
+      i++;
+    } else if (filters.language) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM spaces s
+        WHERE s.id = b.space_id AND s.language = $${i}
+      )`;
+      params.push(filters.language);
       i++;
     }
 

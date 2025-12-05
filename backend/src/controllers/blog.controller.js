@@ -22,6 +22,9 @@ export const BlogController = {
         place_id,
         spaceId,
         space_id,
+        businessKey,
+        business_key,
+        language,
         restrictReplies,
         restrictedComments,
         tags,
@@ -68,6 +71,8 @@ export const BlogController = {
         publish_to: finalPublishTo,
         category_id: categoryId || category_id || null,
         space_id: finalSpaceId,
+        business_key: businessKey || business_key,
+        language: language,
         place_id: placeId || place_id || null,
         restricted_comments: restrictReplies || restrictedComments || false,
         is_place_blog: isPlaceBlog || is_place_blog || false,
@@ -143,7 +148,9 @@ export const BlogController = {
         limit,
         page,
         status,
-        jiveFormat
+        jiveFormat,
+        businessKey,
+        language
       } = req.query;
 
       const filters = {
@@ -158,7 +165,9 @@ export const BlogController = {
         to,
         limit,
         page,
-        status
+        status,
+        businessKey,
+        language
       };
 
       const result = await BlogModel.findAll(filters);
