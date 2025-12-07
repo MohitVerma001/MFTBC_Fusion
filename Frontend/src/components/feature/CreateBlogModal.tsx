@@ -104,13 +104,11 @@ export default function CreateBlogModal({ isOpen, onClose }: CreateBlogModalProp
                 className="w-full px-4 py-3 bg-black border border-red-600/30 rounded-lg text-white focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/20 transition-all duration-300 cursor-pointer"
               >
                 <option value="">Choose a space</option>
-                <option value="marketing">Marketing Team</option>
-                <option value="hr">Human Resources</option>
-                <option value="it">IT Department</option>
-                <option value="sales">Sales Team</option>
-                <option value="product">Product Development</option>
-                <option value="finance">Finance</option>
-                <option value="operations">Operations</option>
+                <option value="MFTBCEn">MFTBC English</option>
+                <option value="MFTBCJa">MFTBC Japanese</option>
+                <option value="DTAEn">DTA English</option>
+                <option value="DTAJa">DTA Japanese</option>
+                
               </select>
             </div>
 
@@ -125,20 +123,18 @@ export default function CreateBlogModal({ isOpen, onClose }: CreateBlogModalProp
                 className="w-full px-4 py-3 bg-black border border-red-600/30 rounded-lg text-white focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/20 transition-all duration-300 cursor-pointer"
               >
                 <option value="">Select category</option>
-                <option value="announcement">Announcement</option>
-                <option value="tutorial">Tutorial</option>
-                <option value="case-study">Case Study</option>
-                <option value="news">News</option>
-                <option value="insights">Insights</option>
-                <option value="tips">Tips & Tricks</option>
-                <option value="update">Product Update</option>
-                <option value="culture">Company Culture</option>
+                <option value="News">News</option>
+                <option value="hr">HR</option>
+                <option value="content">Content</option>
+                <option value="IT">IT</option>
+                <option value="personalBlog">Personal Blog</option>
+                <option value="crossfunctions">Crossfunctions</option> 
               </select>
             </div>
           </div>
 
           {/* HR Category Selection - Only show if HR space is selected */}
-          {formData.space === 'hr' && (
+          {formData.category === 'hr' && (
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 HR Category <span className="text-red-600">*</span>
