@@ -1,1 +1,0 @@
-export { SocialActivityHighlightsSection } from "./SocialActivityHighlightsSection";
